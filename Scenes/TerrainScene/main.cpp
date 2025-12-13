@@ -304,9 +304,9 @@ GLFWwindow* GLFW_INIT() {
 void init_geometry() {
     // church = Renderer::Geometry::Model("../../Models/church.glb");
     
-    diffuse = Texture::LoadFromFile("../../Scenes/TerrainScene/Assets/world_color_map.png");
-    height = Texture::LoadFromFile("../../Scenes/TerrainScene/Assets/world_height_map.png");
-    cloud = Texture::LoadFromFile("../../Scenes/TerrainScene/Assets/world_cloud_map.png");
+    diffuse = Texture::LoadFromFile("../../Assets/Textures/world_color_map.png");
+    height = Texture::LoadFromFile("../../Assets/Textures/world_height_map.png");
+    cloud = Texture::LoadFromFile("../../Assets/Textures/world_cloud_map.png");
 
     terrain = Renderer::Geometry::Quad(diffuse.width, diffuse.height);
     camera_points[0] = Math::Vec3{-((diffuse.width * TERRAIN_SCALE) / 2.0f), 60, (diffuse.height * TERRAIN_SCALE) / 2.0f};
