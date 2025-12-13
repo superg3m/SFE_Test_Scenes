@@ -179,15 +179,17 @@ void mouse(GLFWwindow* window, double mouse_x, double mouse_y) {
 
     if (mouse_captured) {
         camera.processMouseMovement(xoffset, yoffset);
-        LOG_DEBUG("yaw: %f, pitch: %f\n", camera.yaw, camera.pitch);
     }
 }
 
 void update() {
     if (smooth_camera) {
         camera.position = vec3MoveTowardModified(camera.position, camera_points[camera_point_index], camera.movement_speed * dt);
-        // camera.front = (camera_target - camera.position).normalize();
-        // camera.up = Math::Vec3(0, 1, 0);
+        Math::Vec3 target_direction = (camera_target - camera.position).normalize();
+        // do the inverse of Euler
+        camera.yaw   = RAD_TO_DEGREES(atan2(target_direction.z, target_direction.x)); // do the math on this
+        camera.pitch = RAD_TO_DEGREES(asin(target_direction.y)); // do the math on this
+        camera.updateCamera();
         if (camera.position == camera_points[camera_point_index]) {
             camera_point_index = (camera_point_index + 1) % 4;
         }
