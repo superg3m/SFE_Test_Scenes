@@ -185,11 +185,7 @@ void mouse(GLFWwindow* window, double mouse_x, double mouse_y) {
 void update() {
     if (smooth_camera) {
         camera.position = vec3MoveTowardModified(camera.position, camera_points[camera_point_index], camera.movement_speed * dt);
-        Math::Vec3 target_direction = (camera_target - camera.position).normalize();
-        // do the inverse of Euler
-        camera.yaw   = RAD_TO_DEGREES(atan2(target_direction.z, target_direction.x)); // do the math on this
-        camera.pitch = RAD_TO_DEGREES(asin(target_direction.y)); // do the math on this
-        camera.updateCamera();
+        camera.lookat(camera_target);
         if (camera.position == camera_points[camera_point_index]) {
             camera_point_index = (camera_point_index + 1) % 4;
         }
