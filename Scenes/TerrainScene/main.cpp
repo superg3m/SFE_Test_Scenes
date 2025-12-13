@@ -315,9 +315,7 @@ void init_geometry() {
     camera_points[3] = Math::Vec3{((diffuse.width * TERRAIN_SCALE) / 2.0f), 30, (diffuse.height * TERRAIN_SCALE) / 2.0f};
 
     light = Renderer::Geometry::Cube();
-
     clouds = Renderer::Geometry::Quad();
-
 }
 
 int main(int argc, char** argv) {
