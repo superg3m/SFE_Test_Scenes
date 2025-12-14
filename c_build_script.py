@@ -23,7 +23,10 @@ cc: CompilerConfig = CompilerConfig(
 pc: ProjectConfig = ProjectConfig(
     project_name = "SFE_Test_Scenes",
     project_dependencies = [
-        Dependency("SFE")
+        Dependency(
+            name = "SFE",
+            branch_name = "gpu-buffers"
+        ),
     ],
     project_debug_with_visual_studio = False,
     project_rebuild_project_dependencies=True,
@@ -39,7 +42,7 @@ elif IS_LINUX() and not C_BUILD_IS_DEPENDENCY():
 
 if cc.compiler_name == "cl":
     cc.compiler_warning_level = "4"
-    cc.compiler_disable_specific_warnings = ["4244", "4100", "4458", "4201", "4116"]
+    cc.compiler_disable_specific_warnings = ["4244", "4100", "4458", "4201", "4116", "4702"]
 else:
     cc.compiler_warning_level = ""
     cc.compiler_disable_specific_warnings = [
