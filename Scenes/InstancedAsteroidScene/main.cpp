@@ -2,18 +2,26 @@
 
 #include "Shaders/QuadInstance/quad.hpp"
 
-ShaderQuadInstance instance_shader;
+Camera camera = Camera(0, 1, 10);
+float WIDTH = 900;
+float HEIGHT = 900;
 
-Renderer::Geometry quad;
+GFX::Geometry quad;
+ShaderQuadInstance instance_shader;
 DS::Vector<Math::Vec2> translations;
 
 void render() {
+    glClearColor(0.2f, 0.2f, 0.2f, 0);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
     instance_shader.use();
     quad.drawInstanced(&instance_shader, 100);
+
+    GFX::ClearTelemetry();
 }
 
-int main() {
-    DS::Vector<Renderer::Vertex> quad_vertices = {
+void init_geometry() {
+    DS::Vector<GFX::Vertex> quad_vertices = {
         Math::Vec3(-0.05f, +0.05f, 0),
         Math::Vec3(+0.05f, -0.05f, 0),
         Math::Vec3(-0.05f, -0.05f, 0),
@@ -23,7 +31,7 @@ int main() {
         Math::Vec3(+0.05f, +0.05f, 0),
     };
 
-    quad = Renderer::Geometry(quad_vertices);
+    quad = GFX::Geometry(quad_vertices);
 
     int index = 0;
     float offset = 0.1f;
@@ -38,11 +46,75 @@ int main() {
         }
     }
 
-    Renderer::GPUBuffer instanced_offset_buffer = Renderer::GPUBuffer::VBO(
-        Renderer::BufferType::VERTEX, Renderer::BufferUsage::STATIC, sizeof(Math::Vec2), 
-        {{0, false, 0, Renderer::BufferStrideTypeInfo::VEC2}}, 
-        sizeof(Math::Vec2) * translations.count(), translations.data()
-    );
-
+    DS::Vector<GFX::AttributeDesc> descriptors = {GFX::AttributeDesc(8, true, 0, GFX::BufferStrideTypeInfo::VEC2)};
+    GFX::GPUBuffer instanced_offset_buffer = GFX::GPUBuffer::VBO(GFX::BufferUsage::STATIC, descriptors, translations);
     quad.VAO.bindBuffer(instanced_offset_buffer);
+}
+
+GLFWwindow* GLFW_INIT() {
+    RUNTIME_ASSERT_MSG(glfwInit(), "Failed to init glfw\n");
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
+    #ifdef __APPLE__
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    #endif
+
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
+    if (window == nullptr) {
+        LOG_ERROR("Failed to create GLFW window\n");
+        glfwTerminate();
+        exit(-1);
+    }
+
+    glfwMakeContextCurrent(window);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        LOG_ERROR("Failed to initialize GLAD\n");
+        glfwTerminate();
+        exit(-1);
+    }
+
+
+    glfwSwapInterval(1); // vsync
+    glEnable(GL_MULTISAMPLE);
+    GFX::SetDepthTest(true);
+    GFX::SetStencilTest(true);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glEnable(GL_FRAMEBUFFER_SRGB);
+
+    return window;
+}
+
+int main(int argc, char** argv) {
+    Random::Seed seed = Random::GenerateSeed(451);
+    Memory::GeneralAllocator allocator = Memory::GeneralAllocator();
+    Memory::bindAllocator(&allocator);
+
+    GLFWwindow* window = GLFW_INIT();
+    Input::Init();
+    if (!Input::GLFW_SETUP(window)) {
+        LOG_ERROR("Failed to setup GLFW\n");
+        glfwTerminate();
+        exit(-1);
+    }
+    
+    instance_shader = ShaderQuadInstance({"../../Scenes/InstancedAsteroidScene/Shaders/QuadInstance/quad.vert", "../../Scenes/InstancedAsteroidScene/Shaders/QuadInstance/quad.frag"});
+
+    init_geometry();
+
+    while (!glfwWindowShouldClose(window)) {
+        Input::Poll();
+
+        render();
+
+        glfwPollEvents();
+        glfwSwapBuffers(window);
+    }
+
+    exit(EXIT_SUCCESS);
 }

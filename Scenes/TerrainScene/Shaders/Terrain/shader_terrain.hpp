@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SFE/Renderer/ShaderBase/sfe_shader_base.hpp>
+#include <SFE/GFX/ShaderBase/sfe_shader_base.hpp>
 
 struct ShaderTerrain : public ShaderBase {
     ShaderTerrain() = default;

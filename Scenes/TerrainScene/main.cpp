@@ -8,9 +8,9 @@ ShaderCloud cloud_shader;
 ShaderTerrain terrain_shader;
 ShaderUniformColor uniform_shader;
 
-Renderer::Geometry terrain;
-Renderer::Geometry clouds;
-Renderer::Geometry light;
+GFX::Geometry terrain;
+GFX::Geometry clouds;
+GFX::Geometry light;
 
 bool emit = false;
 Texture diffuse;
@@ -80,9 +80,9 @@ void cbMasterProfile() {
     }
 
     if (Input::GetKeyPressed(Input::KEY_L)) {
-        Renderer::SetWireFrame(true);
+        GFX::SetWireFrame(true);
     } else if (Input::GetKeyReleased(Input::KEY_L)) {
-        Renderer::SetWireFrame(false);
+        GFX::SetWireFrame(false);
     }
 
     if (Input::GetKeyPressed(Input::KEY_C)) {
@@ -196,7 +196,7 @@ void display() {
     glClearColor(0.2f, 0.2f, 0.2f, 0);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-    Math::Mat4 perspective = Renderer::GetProjectionMatrix3D(WIDTH, HEIGHT, camera.zoom);
+    Math::Mat4 perspective = GFX::GetProjectionMatrix3D(WIDTH, HEIGHT, camera.zoom);
     Math::Mat4 view = camera.getViewMatrix();
 
     cloud_shader.setProjection(perspective);
@@ -244,13 +244,13 @@ void display() {
     cloud_shader.setCloudTexture(cloud);
     cloud_shader.setFloat("uOffsetX", cosf(0.05 * accumulator));
     cloud_shader.setFloat("uOffsetY", sinf(0.05 * accumulator));
-    Renderer::SetBlending(true);
+    GFX::SetBlending(true);
     clouds.draw(&cloud_shader);
-    Renderer::SetBlending(false);
+    GFX::SetBlending(false);
 
-    // LOG_WARN("Draw Call Count: %d\n", Renderer::GetDrawCallCount());
+    // LOG_WARN("Draw Call Count: %d\n", GFX::GetDrawCallCount());
 
-    Renderer::ClearTelemetry();
+    GFX::ClearTelemetry();
 }
 
 void error_callback( int error, const char *msg ) {
@@ -292,8 +292,8 @@ GLFWwindow* GLFW_INIT() {
     glfwSetInputMode(window, GLFW_CURSOR, mouse_captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
     glEnable(GL_MULTISAMPLE);
-    Renderer::SetDepthTest(true);
-    Renderer::SetStencilTest(true);
+    GFX::SetDepthTest(true);
+    GFX::SetStencilTest(true);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // glEnable(GL_FRAMEBUFFER_SRGB);
@@ -302,20 +302,20 @@ GLFWwindow* GLFW_INIT() {
 }
 
 void init_geometry() {
-    // church = Renderer::Geometry::Model("../../Models/church.glb");
+    // church = GFX::Geometry::Model("../../Models/church.glb");
     
     diffuse = Texture::LoadFromFile("../../Assets/Textures/world_color_map.png");
     height = Texture::LoadFromFile("../../Assets/Textures/world_height_map.png");
     cloud = Texture::LoadFromFile("../../Assets/Textures/world_cloud_map.png");
 
-    terrain = Renderer::Geometry::Quad(diffuse.width, diffuse.height);
+    terrain = GFX::Geometry::Quad(diffuse.width, diffuse.height);
     camera_points[0] = Math::Vec3{-((diffuse.width * TERRAIN_SCALE) / 2.0f), 60, (diffuse.height * TERRAIN_SCALE) / 2.0f};
     camera_points[1] = Math::Vec3{-((diffuse.width * TERRAIN_SCALE) / 2.0f), 30, -(diffuse.height * TERRAIN_SCALE) / 2.0f};
     camera_points[2] = Math::Vec3{((diffuse.width * TERRAIN_SCALE) / 2.0f), 60, -(diffuse.height * TERRAIN_SCALE) / 2.0f};
     camera_points[3] = Math::Vec3{((diffuse.width * TERRAIN_SCALE) / 2.0f), 30, (diffuse.height * TERRAIN_SCALE) / 2.0f};
 
-    light = Renderer::Geometry::Cube();
-    clouds = Renderer::Geometry::Quad();
+    light = GFX::Geometry::Cube();
+    clouds = GFX::Geometry::Quad();
 }
 
 int main(int argc, char** argv) {
