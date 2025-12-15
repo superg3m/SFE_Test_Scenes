@@ -35,8 +35,7 @@ void init_geometry() {
 
     int index = 0;
     float offset = 0.1f;
-    translations = DS::Vector<Math::Vec2>(100);
-    translations.resize(100);
+    translations = DS::Vector<Math::Vec2>(100, 100);
     for (int y = -10; y < 10; y += 2) {
         for (int x = -10; x < 10; x += 2) {
             Math::Vec2 translation;

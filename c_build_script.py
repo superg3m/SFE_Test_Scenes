@@ -30,7 +30,7 @@ pc: ProjectConfig = ProjectConfig(
     ],
     project_debug_with_visual_studio = False,
     project_rebuild_project_dependencies = False,
-    project_executable_names = ["terrain_scene.exe"]
+    project_executable_names = ["particle.exe"]
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():
@@ -114,6 +114,27 @@ procedures_config = {
         source_files = [
             "../../Scenes/InstancedAsteroidScene/main.cpp",
             "../../Scenes/InstancedAsteroidScene/Shaders/**/*.cpp",
+        ],
+        additional_libs = libs,
+        include_paths = [
+            "../..",
+            "../../SFE",
+
+            "../../SFE/Vendor",
+            "../../SFE/Vendor/stb",
+            "../../SFE/Vendor/glad/include", 
+            "../../SFE/Vendor/glfw",
+            "../../SFE/Vendor/assimp/include",
+        ],
+        compiler_inject_into_args=inject
+    ),
+    
+    "particle scene": ProcedureConfig(
+        build_directory = f"./{build_postfix}",
+        output_name = f"particle.exe",
+        source_files = [
+            "../../Scenes/ParticleScene/main.cpp",
+            "../../Scenes/ParticleScene/Shaders/**/*.cpp",
         ],
         additional_libs = libs,
         include_paths = [

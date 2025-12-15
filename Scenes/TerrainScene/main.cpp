@@ -19,7 +19,7 @@ Texture cloud;
 
 // This should be a grouping of state
 bool smooth_camera = false;
-Camera camera;
+Camera camera = Camera(0, 1, 10);
 bool mouse_captured = true;
 float dt = 0;
 float accumulator = 0;
@@ -335,7 +335,6 @@ int main(int argc, char** argv) {
 
     init_geometry();
 
-    camera = Camera(0, 1, 10);
     float previous = 0;
     float timer = 2;
 	while (!glfwWindowShouldClose(window)) {
