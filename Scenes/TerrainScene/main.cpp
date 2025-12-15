@@ -3,7 +3,7 @@
 #include "Shaders/Terrain/shader_terrain.hpp"
 
 ShaderNoMaterial cloud_shader;
-ShaderTerrain terrain_shader;
+ShaderNoMaterial terrain_shader;
 ShaderNoMaterial uniform_shader;
 
 GFX::Geometry terrain;
@@ -221,17 +221,17 @@ void display() {
 
 
     model = Math::Mat4::Identity();
-    // model = Math::Mat4::Rotate(model, Math::Quat::FromEuler(90, 0, 0));
     model = Math::Mat4::Scale(model, TERRAIN_SCALE);
     terrain_shader.setModel(model);
-    terrain_shader.setHeightBoost(height_boost);
-    terrain_shader.setRenderNormals(render_normals);
-    terrain_shader.setRenderShading(render_shading);
-    terrain_shader.setLightPosition(light_position);
-    terrain_shader.setDimensions(diffuse.width, diffuse.height);
-    terrain_shader.setColorTexture(diffuse);
-    terrain_shader.setHeightTexture(height);
-    // terrain_shader.setRenderDepth(height_boost);
+    terrain_shader.setFloat("uWidth", diffuse.width);
+    terrain_shader.setFloat("uHeight", diffuse.height);
+    terrain_shader.setInt("uHeightBoost", height_boost);
+    terrain_shader.setTexture2D("uColorTexture", 0, diffuse);
+    terrain_shader.setTexture2D("uHeightTexture", 1, height);
+    terrain_shader.setVec3("uLightPosition", light_position);
+    terrain_shader.setVec3("uLightPosition", light_position);
+    terrain_shader.setBool("uRenderShading", render_shading);
+    terrain_shader.setBool("uRenderNormals", render_normals);
     terrain.draw(&terrain_shader);
 
     model = Math::Mat4::Identity();
@@ -300,8 +300,6 @@ GLFWwindow* GLFW_INIT() {
 }
 
 void init_geometry() {
-    // church = GFX::Geometry::Model("../../Models/church.glb");
-    
     diffuse = Texture::LoadFromFile("../../Assets/Textures/world_color_map.png");
     height = Texture::LoadFromFile("../../Assets/Textures/world_height_map.png");
     cloud = Texture::LoadFromFile("../../Assets/Textures/world_cloud_map.png");
@@ -334,7 +332,7 @@ int main(int argc, char** argv) {
     Input::CreateProfile(LIGHT_PROFILE, cbLightMovementProfile, false);
     
     cloud_shader = ShaderNoMaterial({"../../Scenes/TerrainScene/Shaders/Cloud/cloud.vert", "../../Scenes/TerrainScene/Shaders/Cloud/cloud.frag"});
-    terrain_shader = ShaderTerrain({"../../Scenes/TerrainScene/Shaders/Terrain/terrain.vert", "../../Scenes/TerrainScene/Shaders/Terrain/terrain.frag"});
+    terrain_shader = ShaderNoMaterial({"../../Scenes/TerrainScene/Shaders/Terrain/terrain.vert", "../../Scenes/TerrainScene/Shaders/Terrain/terrain.frag"});
     uniform_shader = ShaderNoMaterial({"../../Scenes/TerrainScene/Shaders/Uniform/uniform.vert", "../../Scenes/TerrainScene/Shaders/Uniform/uniform.frag"});
 
     init_geometry();
