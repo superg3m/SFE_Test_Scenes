@@ -19,7 +19,7 @@ void ShaderTerrain::compile() {
     this->uRenderNormals_Location = this->getUniformLocation("uRenderNormals", GL_BOOL);
 }
 
-void ShaderTerrain::setMaterial(const Material& material) const {}
+void ShaderTerrain::setMaterial(const Material& material) {}
 
 void ShaderTerrain::setDimensions(float width, float height) {
     this->setFloat(this->uWidth_Location, width);

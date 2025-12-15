@@ -1,12 +1,12 @@
 #pragma once
 
-#include <SFE/GFX/ShaderBase/sfe_shader_base.hpp>
+#include <SFE/GFX/Shader/Base/sfe_shader_base.hpp>
 
 struct ShaderTerrain : public ShaderBase {
     ShaderTerrain() = default;
     ShaderTerrain(DS::Vector<const char*> shader_paths);
     void compile() override;
-    void setMaterial(const Material &material) const override;
+    void setMaterial(const Material &material) override;
 
     void setDimensions(float width, float height);
     void setHeightBoost(int height_boost);

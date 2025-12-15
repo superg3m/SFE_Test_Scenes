@@ -1,13 +1,13 @@
 #include <SFE/sfe.hpp>
+#include <SFE/GFX/Shader/NoMaterial/sfe_shader_no_material.hpp>
 
-#include "Shaders/QuadInstance/quad.hpp"
 
 Camera camera = Camera(0, 1, 10);
 float WIDTH = 900;
 float HEIGHT = 900;
 
 GFX::Geometry quad;
-ShaderQuadInstance instance_shader;
+ShaderNoMaterial instance_shader;
 DS::Vector<Math::Vec2> translations;
 
 void render() {
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
         exit(-1);
     }
     
-    instance_shader = ShaderQuadInstance({"../../Scenes/InstancedAsteroidScene/Shaders/QuadInstance/quad.vert", "../../Scenes/InstancedAsteroidScene/Shaders/QuadInstance/quad.frag"});
+    instance_shader = ShaderNoMaterial({"../../Scenes/InstancedAsteroidScene/Shaders/QuadInstance/quad.vert", "../../Scenes/InstancedAsteroidScene/Shaders/QuadInstance/quad.frag"});
 
     init_geometry();
 

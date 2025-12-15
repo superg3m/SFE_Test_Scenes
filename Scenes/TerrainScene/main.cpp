@@ -1,12 +1,10 @@
 #include <SFE/sfe.hpp>
 
-#include "Shaders/Cloud/shader_cloud.hpp"
 #include "Shaders/Terrain/shader_terrain.hpp"
-#include "Shaders/Uniform/shader_uniform_color.hpp"
 
-ShaderCloud cloud_shader;
+ShaderNoMaterial cloud_shader;
 ShaderTerrain terrain_shader;
-ShaderUniformColor uniform_shader;
+ShaderNoMaterial uniform_shader;
 
 GFX::Geometry terrain;
 GFX::Geometry clouds;
@@ -241,7 +239,7 @@ void display() {
     model = Math::Mat4::Rotate(model, Math::Quat::FromEuler(-90, 0, 0));
     model = Math::Mat4::Translate(model, 0, 40, 0);
     cloud_shader.setModel(model);
-    cloud_shader.setCloudTexture(cloud);
+    cloud_shader.setTexture2D("uCloudTexture", 0, cloud);
     cloud_shader.setFloat("uOffsetX", cosf(0.05 * accumulator));
     cloud_shader.setFloat("uOffsetY", sinf(0.05 * accumulator));
     GFX::SetBlending(true);
@@ -335,9 +333,9 @@ int main(int argc, char** argv) {
     Input::CreateProfile(MOVEMENT_PROFILE, cbMovementProfile);
     Input::CreateProfile(LIGHT_PROFILE, cbLightMovementProfile, false);
     
-    cloud_shader = ShaderCloud({"../../Scenes/TerrainScene/Shaders/Cloud/cloud.vert", "../../Scenes/TerrainScene/Shaders/Cloud/cloud.frag"});
+    cloud_shader = ShaderNoMaterial({"../../Scenes/TerrainScene/Shaders/Cloud/cloud.vert", "../../Scenes/TerrainScene/Shaders/Cloud/cloud.frag"});
     terrain_shader = ShaderTerrain({"../../Scenes/TerrainScene/Shaders/Terrain/terrain.vert", "../../Scenes/TerrainScene/Shaders/Terrain/terrain.frag"});
-    uniform_shader = ShaderUniformColor({"../../Scenes/TerrainScene/Shaders/Uniform/uniform.vert", "../../Scenes/TerrainScene/Shaders/Uniform/uniform.frag"});
+    uniform_shader = ShaderNoMaterial({"../../Scenes/TerrainScene/Shaders/Uniform/uniform.vert", "../../Scenes/TerrainScene/Shaders/Uniform/uniform.frag"});
 
     init_geometry();
 
