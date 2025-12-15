@@ -1,12 +1,12 @@
-#include "quad.hpp"
+#include "asteroid.hpp"
 
-ShaderQuadInstance::ShaderQuadInstance(DS::Vector<const char*> shader_paths) {
+ShaderAsteroid::ShaderQuadInstance(DS::Vector<const char*> shader_paths) {
     this->shader_paths = shader_paths;
     this->compile();
 }
 
-void ShaderQuadInstance::compile() {
+void ShaderAsteroid::compile() {
     this->program_id = this->createShaderProgram(this->shader_paths);
 }
 
-void ShaderQuadInstance::setMaterial(const Material& material) const {}
+void ShaderAsteroid::setMaterial(const Material& material) const {}
