@@ -9,7 +9,6 @@ struct ShaderAsteroid : public ShaderBase {
     void setMaterial(const Material &material) const override;
 
     void setTexture(Texture &texture);
-
 private:
     unsigned int uTexture_Location;
 };
