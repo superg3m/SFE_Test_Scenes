@@ -79,7 +79,7 @@ elif IS_DARWIN():
     inject += ["-Wl,-rpath,@executable_path"]
     libs += [
         f"../../SFE/Vendor/glfw/bin/macos/lib-arm64/libglfw3.a",
-        f"../../SFE/Vendor/assimp/bin/macos/libassimp.dylib"
+        f"../../SFE/Vendor/assimp/bin/macos/libassimp.dylib",
         "-framework OpenGL",
         "-framework Cocoa",
         "-framework IOKit",
