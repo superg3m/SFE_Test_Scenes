@@ -46,9 +46,9 @@ void init_geometry() {
         }
     }
 
-    DS::Vector<GFX::AttributeDesc> descriptors = {GFX::AttributeDesc(8, true, 0, GFX::BufferStrideTypeInfo::VEC2)};
+    DS::Vector<GFX::AttributeDesc> descriptors = {GFX::AttributeDesc(0, GFX::BufferStrideTypeInfo::VEC2)};
     GFX::GPUBuffer instanced_offset_buffer = GFX::GPUBuffer::VBO(GFX::BufferUsage::STATIC, descriptors, translations);
-    quad.VAO.bindBuffer(instanced_offset_buffer);
+    quad.VAO.bindVBO(8, true, instanced_offset_buffer);
 }
 
 GLFWwindow* GLFW_INIT() {
