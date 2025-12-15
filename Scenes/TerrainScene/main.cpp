@@ -1,7 +1,5 @@
 #include <SFE/sfe.hpp>
 
-#include "Shaders/Terrain/shader_terrain.hpp"
-
 ShaderNoMaterial cloud_shader;
 ShaderNoMaterial terrain_shader;
 ShaderNoMaterial uniform_shader;
