@@ -24,8 +24,7 @@ pc: ProjectConfig = ProjectConfig(
     project_name = "SFE_Test_Scenes",
     project_dependencies = [
         Dependency(
-            name = "SFE",
-            branch_name = "main"
+            name = "SFE"
         ),
     ],
     project_debug_with_visual_studio = True,
