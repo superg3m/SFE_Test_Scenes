@@ -114,7 +114,6 @@ void update() {
     const float PARTICLE_SPAWN_COUNT_PER_FRAME = 20;
     for (int i = 0; i < PARTICLE_SPAWN_COUNT_PER_FRAME; i++) {
         Particle p;
-        // make this have some randomness Random::GenerateF32(&seed);
         p.position = Math::Vec3(0, 0, 0);
         float dx = Random::GenerateRange(&seed, -1, 1);
         float dy = Random::GenerateRange(&seed, 1, 4);
@@ -125,11 +124,11 @@ void update() {
         next_available_particle_index = (next_available_particle_index + 1) % MAX_PARTICLES;
     }
 
-    // update and render particles
     for (int i = 0; i < MAX_PARTICLES; i++) {
         Particle* p = &particles[i];
         p->position += p->velocity.scale(dt);
         p->orientation = Math::Quat::FromEuler(0, 0, p->angular_velocity_z * accumulator);
+        particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);;
     }
 }
 
@@ -143,16 +142,9 @@ void render() {
     particle_shader.setView(view);
     particle_shader.setProjection(perspective);
 
-    #if 1 
-        DS::Vector<Math::Mat4> column_major_models =  DS::Vector<Math::Mat4>(MAX_PARTICLES, MAX_PARTICLES);
-        for (int i = 0; i < MAX_PARTICLES; i++) {
-            Particle* p = &particles[i];
-            particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);
-            column_major_models[i] = particle_models[i].toColumnMajor();
-        }
-
+    #if 1
         particle.VAO.bind();
-        particle_model_buffer.updateEntireBuffer(column_major_models);
+        particle_model_buffer.updateEntireBuffer(particle_models);
         particle_shader.setTexture2D("uTexture", 0, fire_texture);
         particle.drawInstanced(&particle_shader, MAX_PARTICLES);
     #else

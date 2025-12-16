@@ -28,8 +28,8 @@ pc: ProjectConfig = ProjectConfig(
             branch_name = "gpu-buffers"
         ),
     ],
-    project_debug_with_visual_studio = False,
-    project_rebuild_project_dependencies = False,
+    project_debug_with_visual_studio = True,
+    project_rebuild_project_dependencies = True,
     project_executable_names = ["particle.exe"]
 )
 
