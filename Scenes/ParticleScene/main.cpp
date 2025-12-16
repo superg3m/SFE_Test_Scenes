@@ -110,6 +110,12 @@ void cbMovementProfile() {
     }
 }
 
+// TODO(Jovanni):
+// investigate why this little update function takes all the cpu time.
+// There must be tons of unecessary call instructions.
+
+// Also make a new branch called windows-multi-thread-update and put this update on a seperate thread.
+// Then on each frame of the update set a condition (frame_data_is_prepared = true or false), make sure to check for spurious wakeups
 void update() {
     const float PARTICLE_SPAWN_COUNT_PER_FRAME = 20;
     for (int i = 0; i < PARTICLE_SPAWN_COUNT_PER_FRAME; i++) {
