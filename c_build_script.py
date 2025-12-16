@@ -25,7 +25,7 @@ pc: ProjectConfig = ProjectConfig(
     project_dependencies = [
         Dependency(
             name = "SFE",
-            branch_name = "gpu-buffers"
+            branch_name = "main"
         ),
     ],
     project_debug_with_visual_studio = True,
