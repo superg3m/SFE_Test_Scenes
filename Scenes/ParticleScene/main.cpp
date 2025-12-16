@@ -12,12 +12,37 @@ GFX::GPUBuffer particle_model_buffer;
 bool mouse_captured = false;
 Random::Seed seed;
 Texture fire_texture;
+GLFWwindow* g_window;
+
+
+// Windows specific code
+struct ParticleRange {
+    int start_index;
+    int length;
+};
+
+#undef APIENTRY
+#include <windows.h>
+#define THREAD_COUNT 10
+struct Win32Specific {
+    SRWLOCK lock;
+    HANDLE threads[THREAD_COUNT];
+    ParticleRange ranges[THREAD_COUNT];
+    CONDITION_VARIABLE cv_all_update_theads_done;
+    CONDITION_VARIABLE cv_start_update_threads;
+    volatile LONG update_thread_completion_count = 0;
+    volatile bool start_update_threads = false;
+};
+
+Win32Specific g_win32;
+// Use a semaphore for update() if you have multiple threads doing the update on a range
+// https://learn.microsoft.com/en-us/windows/win32/sync/using-semaphore-objects
 
 #define MASTER_PROFILE "master"
 #define MOVEMENT_PROFILE "movement"
 
 struct Particle {
-    Math::Vec3 scale = Math::Vec3(0.1f);
+    Math::Vec3 scale = Math::Vec3(0.0f);
     Math::Vec3 position =  Math::Vec3(0.0f);
     Math::Quat orientation = Math::Quat::Identity();
 
@@ -26,13 +51,13 @@ struct Particle {
     // float lifetime = 0.0f;
 
     // float color;
-    // Math::Quat orientation;
+    // Math::Quat orientations;
     // Math::Vec3 scale;
     // Geometry geometry;
     // Math::Vec3 acceleration;
 };
 
-const int MAX_PARTICLES = 10000;
+const int MAX_PARTICLES = 100000;
 Particle particles[MAX_PARTICLES];
 u32 next_available_particle_index;
 
@@ -59,13 +84,11 @@ void mouse(GLFWwindow* window, double mouse_x, double mouse_y) {
     }
 }
 
-
 void cbMasterProfile() {
-    GLFWwindow* window = (GLFWwindow*)Input::glfw_window_instance;
     // const bool SHIFT = Input::GetKey(Input::KEY_SHIFT, Input::PRESSED|Input::DOWN);
 
     if (Input::GetKeyPressed(Input::KEY_ESCAPE)) {
-        glfwSetWindowShouldClose(window, true);
+        glfwSetWindowShouldClose(g_window, true);
     }
 
     if (Input::GetKeyPressed(Input::KEY_R)) {
@@ -80,7 +103,7 @@ void cbMasterProfile() {
 
     if (Input::GetKeyPressed(Input::KEY_C)) {
         mouse_captured = !mouse_captured;
-        glfwSetInputMode(window, GLFW_CURSOR, mouse_captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+        glfwSetInputMode(g_window, GLFW_CURSOR, mouse_captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
     }
 }
 
@@ -115,30 +138,50 @@ void cbMovementProfile() {
 // There must be tons of unecessary call instructions.
 
 // Also make a new branch called windows-multi-thread-update and put this update on a seperate thread.
-// Then on each frame of the update set a condition (frame_data_is_prepared = true or false), make sure to check for spurious wakeups
-void update() {
-    const float PARTICLE_SPAWN_COUNT_PER_FRAME = 20;
-    for (int i = 0; i < PARTICLE_SPAWN_COUNT_PER_FRAME; i++) {
-        Particle p;
-        p.position = Math::Vec3(0, 0, 0);
-        float dx = Random::GenerateRange(&seed, -1, 1);
-        float dy = Random::GenerateRange(&seed, 1, 4);
-        float dz = 0;
-        p.velocity = Math::Vec3(dx, dy, dz);
+// Then on each frame of the update set a condition (update is complete), make sure to check for spurious wakeups
+DWORD WINAPI update(void* param) {
+    ParticleRange* pr = (ParticleRange*)param;
 
-        particles[next_available_particle_index] = p;
-        next_available_particle_index = (next_available_particle_index + 1) % MAX_PARTICLES;
+    while (!glfwWindowShouldClose(g_window)) {
+        // block here until render consumes
+        AcquireSRWLockShared(&g_win32.lock);
+        WakeConditionVariable(&g_win32.cv_start_update_threads);
+        while (!g_win32.start_update_threads) {
+            SleepConditionVariableSRW(&g_win32.cv_start_update_threads, &g_win32.lock, INFINITE, CONDITION_VARIABLE_LOCKMODE_SHARED);
+        }
+        ReleaseSRWLockShared(&g_win32.lock);
+
+        // NOTE(Jovanni): This doesn't need a lock because its partitioned correctly
+        for (int i = pr->start_index; i < pr->start_index + pr->length; i++) {
+            Particle* p = &particles[i];
+            p->scale = Math::Vec3(0.25);
+            p->position += p->velocity.scale(dt);
+            p->orientation = Math::Quat::FromEuler(0, 0, p->angular_velocity_z * accumulator);
+            particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);;
+        }
+
+        if (InterlockedIncrement(&g_win32.update_thread_completion_count) == THREAD_COUNT) {
+            WakeConditionVariable(&g_win32.cv_all_update_theads_done);
+        }
     }
 
-    for (int i = 0; i < MAX_PARTICLES; i++) {
-        Particle* p = &particles[i];
-        p->position += p->velocity.scale(dt);
-        p->orientation = Math::Quat::FromEuler(0, 0, p->angular_velocity_z * accumulator);
-        particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);;
-    }
+    return 0;
 }
 
 void render() {
+    AcquireSRWLockExclusive(&g_win32.lock);
+    g_win32.update_thread_completion_count = 0;
+    g_win32.start_update_threads = true;
+    ReleaseSRWLockExclusive(&g_win32.lock);
+    WakeAllConditionVariable(&g_win32.cv_start_update_threads);
+
+    AcquireSRWLockExclusive(&g_win32.lock);
+    while (g_win32.update_thread_completion_count < THREAD_COUNT) {
+        SleepConditionVariableSRW(&g_win32.cv_all_update_theads_done, &g_win32.lock, INFINITE, 0);
+    }
+    g_win32.start_update_threads = false;
+    ReleaseSRWLockExclusive(&g_win32.lock);
+
     glClearColor(0.2f, 0.2f, 0.2f, 0);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
@@ -201,9 +244,9 @@ int main(int argc, char** argv) {
     Memory::GeneralAllocator allocator = Memory::GeneralAllocator();
     Memory::bindAllocator(&allocator);
 
-    GLFWwindow* window = GLFW_INIT();
+    g_window = GLFW_INIT();
     Input::Init();
-    if (!Input::GLFW_SETUP(window)) {
+    if (!Input::GLFW_SETUP(g_window)) {
         LOG_ERROR("Failed to setup GLFW\n");
         glfwTerminate();
         exit(-1);
@@ -221,9 +264,31 @@ int main(int argc, char** argv) {
 
     fire_texture = Texture::LoadFromFile("../../Assets/Textures/fire.jpg");
 
+
+    InitializeSRWLock(&g_win32.lock);
+    InitializeConditionVariable(&g_win32.cv_all_update_theads_done);
+    InitializeConditionVariable(&g_win32.cv_start_update_threads);
+
+    int start_index = 0; 
+    const int LENGTH = MAX_PARTICLES / THREAD_COUNT;
+    for(int i = 0; i < THREAD_COUNT; i++) {
+        g_win32.ranges[i].start_index = start_index;
+        g_win32.ranges[i].length = LENGTH;
+        start_index += LENGTH;
+
+        g_win32.threads[i] = CreateThread( 
+            nullptr,
+            0,
+            update, 
+            &g_win32.ranges[i],
+            0,
+            nullptr
+        );
+    }
+
     float previous = 0;
     float timer = 2;
-	while (!glfwWindowShouldClose(window)) {
+	while (!glfwWindowShouldClose(g_window)) {
         float current = glfwGetTime();
         dt = current - previous;
         previous = current;
@@ -239,12 +304,36 @@ int main(int argc, char** argv) {
 
         Input::Poll();
 
-        update();
+        const float PARTICLE_SPAWN_COUNT_PER_FRAME = 50;
+        for (int i = 0; i < PARTICLE_SPAWN_COUNT_PER_FRAME; i++) {
+            Particle p;
+            p.position = Math::Vec3(0, 0, 0);
+            float angle = 50.0f * accumulator + (i * 0.1f);
+            float speed = 2.0f + sin(accumulator);
+
+            float dx = speed * cos(angle);
+            float dy = speed * sin(angle);
+            p.velocity = Math::Vec3(dx, dy, 0);
+
+            particles[next_available_particle_index] = p;
+            next_available_particle_index = (next_available_particle_index + 1) % MAX_PARTICLES;
+        }
 		render();
 
 		glfwPollEvents();
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(g_window);
 	}
 
-	exit(EXIT_SUCCESS);
+    AcquireSRWLockExclusive(&g_win32.lock);
+    g_win32.update_thread_completion_count = 0;
+    g_win32.start_update_threads = true;
+    ReleaseSRWLockExclusive(&g_win32.lock);
+    WakeAllConditionVariable(&g_win32.cv_start_update_threads);
+
+    WaitForMultipleObjects(THREAD_COUNT, g_win32.threads, TRUE, INFINITE);
+    for(int i = 0; i < THREAD_COUNT; i++) {
+        CloseHandle(g_win32.threads[i]);
+    }
+
+	return 0;
 }
