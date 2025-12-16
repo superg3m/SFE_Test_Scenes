@@ -142,20 +142,10 @@ void render() {
     particle_shader.setView(view);
     particle_shader.setProjection(perspective);
 
-    #if 1
-        particle.VAO.bind();
-        particle_model_buffer.updateEntireBuffer(particle_models);
-        particle_shader.setTexture2D("uTexture", 0, fire_texture);
-        particle.drawInstanced(&particle_shader, MAX_PARTICLES);
-    #else
-        particle_shader.setTexture2D("uTexture", 0, fire_texture);
-        for (int i = 0; i < MAX_PARTICLES; i++) {
-            Particle* p = &particles[i];
-            particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);
-            particle_shader.setModel(particle_models[i]);
-            particle.draw(&particle_shader);
-        }
-    #endif
+    particle.VAO.bind();
+    particle_model_buffer.updateEntireBuffer(particle_models);
+    particle_shader.setTexture2D("uTexture", 0, fire_texture);
+    particle.drawInstanced(&particle_shader, MAX_PARTICLES);
 }
 
 GLFWwindow* GLFW_INIT() {
