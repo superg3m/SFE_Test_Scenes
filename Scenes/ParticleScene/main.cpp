@@ -66,6 +66,110 @@ const int MAX_PARTICLES = 100000;
 DS::Vector<Particle> particles;
 int particle_count = 0;
 
+
+void mouse(GLFWwindow* window, double mouse_x, double mouse_y) {
+    static bool first = true;
+    static float last_mouse_x;
+    static float last_mouse_y;
+
+    if (first) {
+        last_mouse_x = mouse_x;
+        last_mouse_y = mouse_y;
+        first = false;
+        return;
+    }
+
+    float xoffset = mouse_x - last_mouse_x;
+    float yoffset = last_mouse_y - mouse_y;
+
+    last_mouse_x = mouse_x;
+    last_mouse_y = mouse_y;
+
+    if (mouse_captured) {
+        camera.processMouseMovement(xoffset, yoffset);
+    }
+}
+
+void cbMasterProfile() {
+    // const bool SHIFT = Input::GetKey(Input::KEY_SHIFT, Input::PRESSED|Input::DOWN);
+
+    if (Input::GetKeyPressed(Input::KEY_ESCAPE)) {
+        glfwSetWindowShouldClose(g_window, true);
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_R)) {
+        particle_shader.compile();
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_G)) {
+        toggle_gravity = !toggle_gravity;
+        LOG_TRACE("gravity: %s\n", singularity_mass ? "ON" : "OFF");
+    }
+
+    if (Input::GetKeyDown(Input::KEY_LEFT)) {
+        singularity_mass -= 10000.0f;
+        LOG_TRACE("mass: %f\n", singularity_mass);
+    }
+    
+    if (Input::GetKeyDown(Input::KEY_RIGHT)) {
+        singularity_mass += 10000.0f;
+        LOG_TRACE("mass: %f\n", singularity_mass);
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_UP)) {
+        time_scale += 0.1f;
+        LOG_TRACE("time: %f\n", time_scale);
+    }
+    
+    if (Input::GetKeyPressed(Input::KEY_DOWN)) {
+        time_scale -= 0.1f;
+        LOG_TRACE("time: %f\n", time_scale);
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_L)) {
+        GFX::SetWireFrame(true);
+    } else if (Input::GetKeyReleased(Input::KEY_L)) {
+        GFX::SetWireFrame(false);
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_C)) {
+        mouse_captured = !mouse_captured;
+        glfwSetInputMode(g_window, GLFW_CURSOR, mouse_captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    }
+}
+
+void cbMovementProfile() {
+    if (Input::GetKey(Input::KEY_SPACE, Input::PRESSED|Input::DOWN)) {
+        camera.processKeyboard(UP, dt);
+    }
+
+    if (Input::GetKey(Input::KEY_CTRL, Input::PRESSED|Input::DOWN)) {
+        camera.processKeyboard(DOWN, dt);
+    }
+
+    if (Input::GetKey(Input::KEY_W, Input::PRESSED|Input::DOWN)) {
+        camera.processKeyboard(FORWARD, dt); 
+    }
+
+    if (Input::GetKey(Input::KEY_A, Input::PRESSED|Input::DOWN)) {
+        camera.processKeyboard(LEFT, dt); 
+    }
+
+    if (Input::GetKey(Input::KEY_S, Input::PRESSED|Input::DOWN)) {
+        camera.processKeyboard(BACKWARD, dt); 
+    }
+
+    if (Input::GetKey(Input::KEY_D, Input::PRESSED|Input::DOWN)) {
+        camera.processKeyboard(RIGHT, dt); 
+    }
+}
+
+// TODO(Jovanni):
+// investigate why this little update function takes all the cpu time.
+// There must be tons of unecessary call instructions.
+
+// Also make a new branch called windows-multi-thread-update and put this update on a seperate thread.
+// Then on each frame of the update set a condition (update is complete), make sure to check for spurious wakeups
 void update_worker(int index) {
     ParticleRange pr = g_threads.ranges[index];
     while (!glfwWindowShouldClose(g_window)) {
