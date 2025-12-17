@@ -329,17 +329,25 @@ int main(int argc, char** argv) {
         g_threads.threads[i] = std::thread(update_worker, i);
     }
 
-    float previous = glfwGetTime();
-
-    while (!glfwWindowShouldClose(g_window)) {
+    float previous = 0;
+    float timer = 2;
+	while (!glfwWindowShouldClose(g_window)) {
         float current = glfwGetTime();
+        float dt_for_fps = (current - previous);
         dt = (current - previous) * time_scale;
         previous = current;
+
         accumulator += dt;
+        if (timer == 0) {
+            timer = 2;
+            LOG_DEBUG("FPS: %d\n", (int)(1.0f / dt_for_fps));
+        } else {
+            timer = Math::MoveToward(timer, 0, dt_for_fps);
+        }
         
         Input::Poll();
         
-        const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES * 10;
+        const float PARTICLE_SPAWN_COUNT_PER_SECOND = 10000;
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) { 
             Particle p; 
