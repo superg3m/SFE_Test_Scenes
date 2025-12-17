@@ -191,6 +191,7 @@ void update_worker(int index) {
             p->position += p->velocity.scale(dt);
             p->velocity = p->velocity.scale(0.9998f);
             p->force = get_gravity_force(p->position, p->mass, singularity_position, singularity_mass);
+            
             particle_centers[i] = p->position;
             particle_colors[i] = p->velocity.scale(1.0f / 6.0f);
         }
@@ -338,7 +339,7 @@ int main(int argc, char** argv) {
         
         Input::Poll();
         
-        const float PARTICLE_SPAWN_COUNT_PER_SECOND = 3000;
+        const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES * 10;
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) { 
             Particle p; 
