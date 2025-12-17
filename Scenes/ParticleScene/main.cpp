@@ -228,15 +228,62 @@ void render() {
     particle.drawInstanced(&particle_shader, particle_count);
 }
 
+GLFWwindow* GLFW_INIT() {
+    RUNTIME_ASSERT_MSG(glfwInit(), "Failed to init glfw\n");
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
+    #ifdef __APPLE__
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    #endif
+
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
+    if (window == nullptr) {
+        LOG_ERROR("Failed to create GLFW window\n");
+        glfwTerminate();
+        exit(-1);
+    }
+
+    glfwMakeContextCurrent(window);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        LOG_ERROR("Failed to initialize GLAD\n");
+        glfwTerminate();
+        exit(-1);
+    }
+    
+    Input::GLFW_BIND_MOUSE_MOVE_CALLBACK(mouse);
+
+    glfwSwapInterval(1);
+    glfwSetInputMode(window, GLFW_CURSOR, mouse_captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+
+    glEnable(GL_MULTISAMPLE);
+    GFX::SetDepthTest(true);
+    GFX::SetStencilTest(true);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glEnable(GL_CULL_FACE);
+    // glCullFace(GL_FRONT); 
+    // glEnable(GL_FRAMEBUFFER_SRGB);
+
+    return window;
+}
+
 int main(int argc, char** argv) {
     seed = Random::GenerateSeed(451);
     Memory::GeneralAllocator allocator = Memory::GeneralAllocator();
     Memory::bindAllocator(&allocator);
 
-    glfwInit();
-    g_window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
-    glfwMakeContextCurrent(g_window);
-    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+    g_window = GLFW_INIT();
+    Input::Init();
+    if (!Input::GLFW_SETUP(g_window)) {
+        LOG_ERROR("Failed to setup GLFW\n");
+        glfwTerminate();
+        exit(-1);
+    }
     Input::GLFW_BIND_MOUSE_MOVE_CALLBACK(mouse);
 
     #define MASTER_PROFILE "master"
@@ -284,7 +331,9 @@ int main(int argc, char** argv) {
         dt = (current - previous) * time_scale;
         previous = current;
         accumulator += dt;
-
+        
+        Input::Poll();
+        
         const float PARTICLE_SPAWN_COUNT_PER_SECOND = 3000;
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) { 
@@ -317,6 +366,7 @@ int main(int argc, char** argv) {
         glfwPollEvents();
     }
 
+    g_threads.completed = 0;
     g_threads.cv_start.notify_all();
     for (int i = 0; i < THREAD_COUNT; i++) {
         if (g_threads.threads[i].joinable()) {
