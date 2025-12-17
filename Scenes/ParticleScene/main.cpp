@@ -18,7 +18,7 @@ Texture smoke_texture;
 Texture galaxy_texture;
 GLFWwindow* g_window;
 bool toggle_gravity = true;
-int time_scale = 1;
+float time_scale = 1.0f;
 float singularity_mass = 1000000.0f; // In (KG) 
 
 Math::Vec3 get_gravity_force(Math::Vec3 position_a, float mass_a, Math::Vec3 position_b, float mass_b) {
@@ -70,8 +70,8 @@ struct Particle {
 };
 
 const int MAX_PARTICLES = 150000;
-Particle particles[MAX_PARTICLES];
-int next_available_particle_index = 0;
+DS::Vector<Particle> particles;
+int particle_count = 0;
 
 void mouse(GLFWwindow* window, double mouse_x, double mouse_y) {
     static bool first = true;
@@ -123,13 +123,13 @@ void cbMasterProfile() {
     }
 
     if (Input::GetKeyPressed(Input::KEY_UP)) {
-        time_scale += 1;
-        LOG_TRACE("time: %d\n", time_scale);
+        time_scale += 0.1f;
+        LOG_TRACE("time: %f\n", time_scale);
     }
     
     if (Input::GetKeyPressed(Input::KEY_DOWN)) {
-        time_scale -= 1;
-        LOG_TRACE("time: %d\n", time_scale);
+        time_scale -= 0.1f;
+        LOG_TRACE("time: %f\n", time_scale);
     }
 
     if (Input::GetKeyPressed(Input::KEY_L)) {
@@ -216,11 +216,15 @@ DWORD WINAPI update(void* param) {
                 p->acceleration = p->force.scale(1.0f / p->mass);
                 p->velocity += p->acceleration.scale(dt);
                 p->position += p->velocity.scale(dt);
-                p->velocity = p->velocity.scale(0.9999f);
+                p->velocity = p->velocity.scale(0.9995f);
                 p->force = get_gravity_force(p->position, p->mass, singularity_position, singularity_mass);
         
                 particle_centers[i] = p->position;
                 particle_colors[i] = p->velocity.scale(1.0f / 6.0f);
+
+                if ((dt < 0.0f) && (Math::Vec3::Distance(Math::Vec3(0.0f), p->position) <= 0.5f)) {
+                    particle_count = MAX(0, particle_count - 1);
+                }
             }
         #endif
 
@@ -260,7 +264,7 @@ void render() {
         particle_center_buffer.updateEntireBuffer(particle_centers);
         particle_color_buffer.updateEntireBuffer(particle_colors);
         particle_shader.setTexture2D("uTexture", 0, smoke_texture);
-        particle.drawInstanced(&particle_shader, MAX_PARTICLES);
+        particle.drawInstanced(&particle_shader, particle_count);
     #else
         particle_shader.setTexture2D("uTexture", 0, smoke_texture);
         for (int i = 0; i < MAX_PARTICLES; i++) {
@@ -333,6 +337,7 @@ int main(int argc, char** argv) {
     
     particle = GFX::Geometry::Quad();
     particle_shader = ShaderNoMaterial({"../../Scenes/ParticleScene/Shaders/Particle/particle.vert", "../../Scenes/ParticleScene/Shaders/Particle/particle.frag"});
+    particles = DS::Vector<Particle>(MAX_PARTICLES, MAX_PARTICLES);
     particle_centers = DS::Vector<Math::Vec3>(MAX_PARTICLES, MAX_PARTICLES);
     particle_colors = DS::Vector<Math::Vec3>(MAX_PARTICLES, MAX_PARTICLES);
 
@@ -385,10 +390,9 @@ int main(int argc, char** argv) {
 
         Input::Poll();
 
-        const float PARTICLE_SPAWN_COUNT_PER_FRAME = 50;
-        for (int i = 0; i < PARTICLE_SPAWN_COUNT_PER_FRAME; i++) {
-            if (next_available_particle_index == MAX_PARTICLES - 1) break;
-
+        const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES * 10;
+        int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
+        for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) {
             Particle p;
             #if 1
                 float angle = 50.0f * accumulator + (i * 0.1f);
@@ -416,8 +420,7 @@ int main(int argc, char** argv) {
             p.position = Math::Vec3(0, 0, 0);
             p.scale = Math::Vec3(0.2f);
             p.velocity = Math::Vec3(dx, dy, dz);
-            particles[next_available_particle_index] = p;
-            next_available_particle_index = (next_available_particle_index + 1) % MAX_PARTICLES;
+            particles[particle_count++] = p;
         }
 		render();
 
