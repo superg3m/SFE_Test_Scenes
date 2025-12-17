@@ -8,10 +8,14 @@ Camera camera = Camera(0, 1, 10);
 ShaderNoMaterial particle_shader;
 GFX::Geometry particle;
 DS::Vector<Math::Mat4> particle_models;
+DS::Vector<Math::Vec3> particle_colors;
 GFX::GPUBuffer particle_model_buffer;
+GFX::GPUBuffer particle_color_buffer;
 bool mouse_captured = false;
 Random::Seed seed;
 Texture fire_texture;
+Texture smoke_texture;
+Texture galaxy_texture;
 GLFWwindow* g_window;
 
 
@@ -23,7 +27,7 @@ struct ParticleRange {
 
 #undef APIENTRY
 #include <windows.h>
-#define THREAD_COUNT 10
+#define THREAD_COUNT 5
 struct Win32Specific {
     SRWLOCK lock;
     HANDLE threads[THREAD_COUNT];
@@ -46,8 +50,9 @@ struct Particle {
     Math::Vec3 position =  Math::Vec3(0.0f);
     Math::Quat orientation = Math::Quat::Identity();
 
-    float angular_velocity_z = 720; // 720 degree rotation per second
+    float angular_velocity_z = 180; // 720 degree rotation per second
     Math::Vec3 velocity = Math::Vec3(0, 1, 0);
+    char padding[8];
     // float lifetime = 0.0f;
 
     // float color;
@@ -57,7 +62,7 @@ struct Particle {
     // Math::Vec3 acceleration;
 };
 
-const int MAX_PARTICLES = 100000;
+const int MAX_PARTICLES = 150000;
 Particle particles[MAX_PARTICLES];
 u32 next_available_particle_index;
 
@@ -152,13 +157,44 @@ DWORD WINAPI update(void* param) {
         ReleaseSRWLockShared(&g_win32.lock);
 
         // NOTE(Jovanni): This doesn't need a lock because its partitioned correctly
-        for (int i = pr->start_index; i < pr->start_index + pr->length; i++) {
-            Particle* p = &particles[i];
-            p->scale = Math::Vec3(0.25);
-            p->position += p->velocity.scale(dt);
-            p->orientation = Math::Quat::FromEuler(0, 0, p->angular_velocity_z * accumulator);
-            particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);;
-        }
+        #if 0
+            for (int i = pr->start_index; i < pr->start_index + pr->length; i++) {
+                Particle* p = &particles[i];
+                p->position += p->velocity.scale(dt);
+                p->orientation = Math::Quat::FromEuler(0, 0, p->angular_velocity_z * accumulator);
+                particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);
+            }
+        #elif 0
+            for (int i = pr->start_index; i < pr->start_index + pr->length; i++) {
+                Particle* p = &particles[i];
+                float windX = sin(p->position.y * 2.0f + accumulator);
+                float windY = cos(p->position.x * 2.0f + accumulator);
+
+                p->velocity += Math::Vec3(windX, windY, 0).scale(dt * 2.0f);
+                p->velocity = p->velocity.scale(0.99f); 
+                p->position += p->velocity.scale(dt);
+                
+                p->orientation = Math::Quat::FromEuler(0, 0, p->angular_velocity_z * accumulator);
+                particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);
+            }
+        #else
+            Math::Vec3 attractor_pos = Math::Vec3(500, 500, 0);
+            float pull_strength = 800.0f;
+
+            for (int i = pr->start_index; i < pr->start_index + pr->length; i++) {
+                Particle* p = &particles[i];
+                Math::Vec3 dir = attractor_pos - p->position;
+                float dist = dir.magnitude();
+                if (dist > 0.1f) {
+                    p->velocity += dir.scale((pull_strength / (dist * dist)) * dt);
+                }
+
+                p->position += p->velocity.scale(dt);
+                p->orientation = Math::Quat::FromEuler(0, 0, p->angular_velocity_z * accumulator);
+                particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);
+                particle_colors[i] = p->velocity.scale(1.0f / 10.0f);
+            }
+        #endif
 
         if (InterlockedIncrement(&g_win32.update_thread_completion_count) == THREAD_COUNT) {
             WakeConditionVariable(&g_win32.cv_all_update_theads_done);
@@ -191,10 +227,20 @@ void render() {
     particle_shader.setView(view);
     particle_shader.setProjection(perspective);
 
-    particle.VAO.bind();
-    particle_model_buffer.updateEntireBuffer(particle_models);
-    particle_shader.setTexture2D("uTexture", 0, fire_texture);
-    particle.drawInstanced(&particle_shader, MAX_PARTICLES);
+    #if 1
+        particle.VAO.bind();
+        particle_model_buffer.updateEntireBuffer(particle_models);
+        particle_color_buffer.updateEntireBuffer(particle_colors);
+        particle_shader.setTexture2D("uTexture", 0, fire_texture);
+        particle.drawInstanced(&particle_shader, MAX_PARTICLES);
+    #else
+        particle_shader.setTexture2D("uTexture", 0, smoke_texture);
+        for (int i = 0; i < MAX_PARTICLES; i++) {
+            particle_shader.setModel(particle_models[i]);
+            particle_shader.setVec3("uColor", particle_colors[i]);
+            particle.draw(&particle_shader);
+        }
+    #endif
 }
 
 GLFWwindow* GLFW_INIT() {
@@ -234,6 +280,8 @@ GLFWwindow* GLFW_INIT() {
     GFX::SetStencilTest(true);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glEnable(GL_CULL_FACE);
+    // glCullFace(GL_FRONT); 
     // glEnable(GL_FRAMEBUFFER_SRGB);
 
     return window;
@@ -255,15 +303,19 @@ int main(int argc, char** argv) {
     Input::CreateProfile(MASTER_PROFILE, cbMasterProfile);
     Input::CreateProfile(MOVEMENT_PROFILE, cbMovementProfile);
     
-    particle = GFX::Geometry::Quad();
+    particle = GFX::Geometry::Cube();
     particle_shader = ShaderNoMaterial({"../../Scenes/ParticleScene/Shaders/Particle/particle.vert", "../../Scenes/ParticleScene/Shaders/Particle/particle.frag"});
     particle_models = DS::Vector<Math::Mat4>(MAX_PARTICLES, MAX_PARTICLES);
+    particle_colors = DS::Vector<Math::Vec3>(MAX_PARTICLES, MAX_PARTICLES);
 
     particle_model_buffer = GFX::GPUBuffer::VBO(GFX::BufferUsage::DYNAMIC, {GFX::AttributeDesc(0, GFX::BufferStrideTypeInfo::MAT4)}, particle_models);
-    particle.VAO.bindVBO(8, true, particle_model_buffer);
+    particle_color_buffer = GFX::GPUBuffer::VBO(GFX::BufferUsage::DYNAMIC, {GFX::AttributeDesc(0, GFX::BufferStrideTypeInfo::VEC3)}, particle_colors);
+    particle.VAO.bindVBO(8, true, particle_color_buffer);
+    particle.VAO.bindVBO(9, true, particle_model_buffer);
 
     fire_texture = Texture::LoadFromFile("../../Assets/Textures/fire.jpg");
-
+    smoke_texture = Texture::LoadFromFile("../../Assets/Textures/smoke.jpg");
+    galaxy_texture = Texture::LoadFromFile("../../Assets/Textures/galaxy.jpg");
 
     InitializeSRWLock(&g_win32.lock);
     InitializeConditionVariable(&g_win32.cv_all_update_theads_done);
@@ -307,14 +359,32 @@ int main(int argc, char** argv) {
         const float PARTICLE_SPAWN_COUNT_PER_FRAME = 50;
         for (int i = 0; i < PARTICLE_SPAWN_COUNT_PER_FRAME; i++) {
             Particle p;
+            #if 1
+                float angle = 50.0f * accumulator + (i * 0.1f);
+                float speed = 2.0f + sin(accumulator);
+
+                float dx = speed * cos(angle);
+                float dy = speed * sin(angle);
+                float dz = speed * sin(angle);
+            #elif 0
+                float freqX = 3.0f; 
+                float freqY = 2.0f;
+                float strength = 4.0f;
+
+                float dx = strength * cos(freqX * accumulator + (i * 0.05f));
+                float dy = strength * sin(freqY * accumulator);
+                float dz = 0;
+            #else
+                float individualOffset = (float)next_available_particle_index * 0.001f;
+
+                float dx = 3.0f * cos(5.0f * accumulator + individualOffset);
+                float dy = 3.0f * sin(3.0f * accumulator + individualOffset);
+                float dz = 2.0f * sin(10.0f * accumulator); // Add some Z depth!
+            #endif
+            
             p.position = Math::Vec3(0, 0, 0);
-            float angle = 50.0f * accumulator + (i * 0.1f);
-            float speed = 2.0f + sin(accumulator);
-
-            float dx = speed * cos(angle);
-            float dy = speed * sin(angle);
-            p.velocity = Math::Vec3(dx, dy, 0);
-
+            p.scale = Math::Vec3(0.2f);
+            p.velocity = Math::Vec3(dx, dy, dz);
             particles[next_available_particle_index] = p;
             next_available_particle_index = (next_available_particle_index + 1) % MAX_PARTICLES;
         }
