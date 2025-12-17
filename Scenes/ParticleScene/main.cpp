@@ -43,7 +43,7 @@ struct ParticleRange {
     int length;
 };
 
-#define THREAD_COUNT 5
+#define THREAD_COUNT 1
 
 struct ThreadSystem {
     std::mutex mtx;
@@ -106,7 +106,7 @@ void cbMasterProfile() {
 
     if (Input::GetKeyPressed(Input::KEY_G)) {
         toggle_gravity = !toggle_gravity;
-        LOG_TRACE("gravity: %s\n", singularity_mass ? "ON" : "OFF");
+        LOG_TRACE("gravity: %s\n", toggle_gravity ? "ON" : "OFF");
     }
 
     if (Input::GetKeyDown(Input::KEY_LEFT)) {

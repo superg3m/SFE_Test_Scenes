@@ -13,8 +13,8 @@ out vec3 v_Color;
 
 void main() {
     vec2 BillboardSize = vec2(1.5); 
-    vec3 CameraRight_worldspace = {uView[0][0], uView[1][0], uView[2][0]};
-    vec3 CameraUp_worldspace = {uView[0][1], uView[1][1], uView[2][1]};
+    vec3 CameraRight_worldspace = vec3(uView[0][0], uView[1][0], uView[2][0]);
+    vec3 CameraUp_worldspace = vec3(uView[0][1], uView[1][1], uView[2][1]);
 
     vec3 vertexPosition_worldspace = (
         aCenter + 
