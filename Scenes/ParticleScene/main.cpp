@@ -28,11 +28,15 @@ float singularity_mass = 1000000.0f;
 
 Math::Vec3 get_gravity_force(Math::Vec3 position_a, float mass_a, Math::Vec3 position_b, float mass_b) {
     if (!toggle_gravity) return Math::Vec3(0.0);
+
     Math::Vec3 AB = (position_b - position_a).normalize();
     float distance = Math::Vec3::Distance(position_a, position_b);
-    float force_magnitude = (float)((mass_a * mass_b) / SQUARED(distance + 50));
-    return AB.scale(force_magnitude);
+    float force_magnitude = (float)(1 * ((mass_a * mass_b) / SQUARED(distance + 50)));
+    Math::Vec3 gravity_force = AB.scale(force_magnitude);
+
+    return gravity_force;
 }
+
 
 struct ParticleRange {
     int start_index;
