@@ -7,9 +7,9 @@ float accumulator = 0;
 Camera camera = Camera(0, 1, 10);
 ShaderNoMaterial particle_shader;
 GFX::Geometry particle;
-DS::Vector<Math::Mat4> particle_models;
+DS::Vector<Math::Vec3> particle_centers;
 DS::Vector<Math::Vec3> particle_colors;
-GFX::GPUBuffer particle_model_buffer;
+GFX::GPUBuffer particle_center_buffer;
 GFX::GPUBuffer particle_color_buffer;
 bool mouse_captured = false;
 Random::Seed seed;
@@ -161,8 +161,8 @@ DWORD WINAPI update(void* param) {
             for (int i = pr->start_index; i < pr->start_index + pr->length; i++) {
                 Particle* p = &particles[i];
                 p->position += p->velocity.scale(dt);
-                p->orientation = Math::Quat::FromEuler(0, 0, p->angular_velocity_z * accumulator);
-                particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);
+                particle_centers[i] = p->position;
+                particle_colors[i] = p->velocity.scale(1.0f / 10.0f);
             }
         #elif 0
             for (int i = pr->start_index; i < pr->start_index + pr->length; i++) {
@@ -174,8 +174,8 @@ DWORD WINAPI update(void* param) {
                 p->velocity = p->velocity.scale(0.99f); 
                 p->position += p->velocity.scale(dt);
                 
-                p->orientation = Math::Quat::FromEuler(0, 0, p->angular_velocity_z * accumulator);
-                particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);
+                particle_centers[i] = p->position;
+                particle_colors[i] = p->velocity.scale(1.0f / 10.0f);
             }
         #else
             Math::Vec3 attractor_pos = Math::Vec3(500, 500, 0);
@@ -190,8 +190,7 @@ DWORD WINAPI update(void* param) {
                 }
 
                 p->position += p->velocity.scale(dt);
-                p->orientation = Math::Quat::FromEuler(0, 0, p->angular_velocity_z * accumulator);
-                particle_models[i] = Math::Mat4::Transform(p->scale, p->orientation, p->position);
+                particle_centers[i] = p->position;
                 particle_colors[i] = p->velocity.scale(1.0f / 10.0f);
             }
         #endif
@@ -229,7 +228,7 @@ void render() {
 
     #if 1
         particle.VAO.bind();
-        particle_model_buffer.updateEntireBuffer(particle_models);
+        particle_center_buffer.updateEntireBuffer(particle_centers);
         particle_color_buffer.updateEntireBuffer(particle_colors);
         particle_shader.setTexture2D("uTexture", 0, fire_texture);
         particle.drawInstanced(&particle_shader, MAX_PARTICLES);
@@ -303,15 +302,15 @@ int main(int argc, char** argv) {
     Input::CreateProfile(MASTER_PROFILE, cbMasterProfile);
     Input::CreateProfile(MOVEMENT_PROFILE, cbMovementProfile);
     
-    particle = GFX::Geometry::Cube();
+    particle = GFX::Geometry::Quad();
     particle_shader = ShaderNoMaterial({"../../Scenes/ParticleScene/Shaders/Particle/particle.vert", "../../Scenes/ParticleScene/Shaders/Particle/particle.frag"});
-    particle_models = DS::Vector<Math::Mat4>(MAX_PARTICLES, MAX_PARTICLES);
+    particle_centers = DS::Vector<Math::Vec3>(MAX_PARTICLES, MAX_PARTICLES);
     particle_colors = DS::Vector<Math::Vec3>(MAX_PARTICLES, MAX_PARTICLES);
 
-    particle_model_buffer = GFX::GPUBuffer::VBO(GFX::BufferUsage::DYNAMIC, {GFX::AttributeDesc(0, GFX::BufferStrideTypeInfo::MAT4)}, particle_models);
+    particle_center_buffer = GFX::GPUBuffer::VBO(GFX::BufferUsage::DYNAMIC, {GFX::AttributeDesc(0, GFX::BufferStrideTypeInfo::VEC3)}, particle_centers);
     particle_color_buffer = GFX::GPUBuffer::VBO(GFX::BufferUsage::DYNAMIC, {GFX::AttributeDesc(0, GFX::BufferStrideTypeInfo::VEC3)}, particle_colors);
-    particle.VAO.bindVBO(8, true, particle_color_buffer);
-    particle.VAO.bindVBO(9, true, particle_model_buffer);
+    particle.VAO.bindVBO(8, true, particle_center_buffer);
+    particle.VAO.bindVBO(9, true, particle_color_buffer);
 
     fire_texture = Texture::LoadFromFile("../../Assets/Textures/fire.jpg");
     smoke_texture = Texture::LoadFromFile("../../Assets/Textures/smoke.jpg");
@@ -358,6 +357,8 @@ int main(int argc, char** argv) {
 
         const float PARTICLE_SPAWN_COUNT_PER_FRAME = 50;
         for (int i = 0; i < PARTICLE_SPAWN_COUNT_PER_FRAME; i++) {
+            if (next_available_particle_index == MAX_PARTICLES - 1) break;
+            
             Particle p;
             #if 1
                 float angle = 50.0f * accumulator + (i * 0.1f);
