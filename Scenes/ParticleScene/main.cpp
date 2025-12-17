@@ -46,7 +46,6 @@ struct ThreadSystem {
     std::condition_variable cv_start;
     std::condition_variable cv_done;
     std::atomic<int> completed{0};
-    bool start_update = false;
     std::thread threads[THREAD_COUNT];
     ParticleRange ranges[THREAD_COUNT];
 };
@@ -176,7 +175,7 @@ void update_worker(int index) {
         {
             std::unique_lock<std::mutex> lock(g_threads.mtx);
             g_threads.cv_start.wait(lock, [] { 
-                return g_threads.start_update; 
+                return g_threads.completed == 0; 
             });
         }
 
@@ -203,7 +202,6 @@ void render() {
     {
         std::lock_guard<std::mutex> lock(g_threads.mtx);
         g_threads.completed = 0;
-        g_threads.start_update = true;
     }
     g_threads.cv_start.notify_all();
 
@@ -212,7 +210,6 @@ void render() {
         g_threads.cv_done.wait(lock, [] { 
             return g_threads.completed >= THREAD_COUNT; 
         });
-        g_threads.start_update = false;
     }
 
     glClearColor(0.2f, 0.2f, 0.2f, 0);
@@ -314,9 +311,11 @@ int main(int argc, char** argv) {
         glfwPollEvents();
     }
 
+    g_threads.cv_start.notify_all();
     for (int i = 0; i < THREAD_COUNT; i++) {
-        if (g_threads.threads[i].joinable())
+        if (g_threads.threads[i].joinable()) {
             g_threads.threads[i].join();
+        }
     }
 
     glfwTerminate();
