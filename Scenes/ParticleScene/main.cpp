@@ -178,8 +178,8 @@ DWORD WINAPI update(void* param) {
                 particle_colors[i] = p->velocity.scale(1.0f / 10.0f);
             }
         #else
-            Math::Vec3 attractor_pos = Math::Vec3(500, 500, 0);
-            float pull_strength = 800.0f;
+            Math::Vec3 attractor_pos = Math::Vec3(500, 500, 500);
+            float pull_strength = 1000.0f;
 
             for (int i = pr->start_index; i < pr->start_index + pr->length; i++) {
                 Particle* p = &particles[i];
@@ -230,7 +230,7 @@ void render() {
         particle.VAO.bind();
         particle_center_buffer.updateEntireBuffer(particle_centers);
         particle_color_buffer.updateEntireBuffer(particle_colors);
-        particle_shader.setTexture2D("uTexture", 0, fire_texture);
+        particle_shader.setTexture2D("uTexture", 0, smoke_texture);
         particle.drawInstanced(&particle_shader, MAX_PARTICLES);
     #else
         particle_shader.setTexture2D("uTexture", 0, smoke_texture);
@@ -366,7 +366,7 @@ int main(int argc, char** argv) {
 
                 float dx = speed * cos(angle);
                 float dy = speed * sin(angle);
-                float dz = speed * sin(angle);
+                float dz = speed * sin(angle + i);
             #elif 0
                 float freqX = 3.0f; 
                 float freqY = 2.0f;
