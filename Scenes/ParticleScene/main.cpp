@@ -237,6 +237,12 @@ int main(int argc, char** argv) {
     g_window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
     glfwMakeContextCurrent(g_window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+    Input::GLFW_BIND_MOUSE_MOVE_CALLBACK(mouse);
+
+    #define MASTER_PROFILE "master"
+    #define MOVEMENT_PROFILE "movement"
+    Input::CreateProfile(MASTER_PROFILE, cbMasterProfile);
+    Input::CreateProfile(MOVEMENT_PROFILE, cbMovementProfile);
 
     particle = GFX::Geometry::Quad();
     particle_shader = ShaderNoMaterial({"../../Scenes/ParticleScene/Shaders/Particle/particle.vert", "../../Scenes/ParticleScene/Shaders/Particle/particle.frag"});
