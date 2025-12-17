@@ -373,7 +373,6 @@ int main(int argc, char** argv) {
 
     float previous = 0;
     float timer = 2;
-    
 	while (!glfwWindowShouldClose(g_window)) {
         float current = glfwGetTime();
         float dt_for_fps = (current - previous);
