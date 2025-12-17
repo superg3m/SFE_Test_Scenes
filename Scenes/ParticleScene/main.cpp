@@ -69,7 +69,7 @@ struct Particle {
     // float lifetime = 0.0f;
 };
 
-const int MAX_PARTICLES = 150000;
+const int MAX_PARTICLES = 100000;
 DS::Vector<Particle> particles;
 int particle_count = 0;
 
@@ -109,7 +109,7 @@ void cbMasterProfile() {
 
     if (Input::GetKeyPressed(Input::KEY_G)) {
         toggle_gravity = !toggle_gravity;
-        LOG_TRACE("mass: %s\n", singularity_mass ? "ON" : "OFF");
+        LOG_TRACE("gravity: %s\n", singularity_mass ? "ON" : "OFF");
     }
 
     if (Input::GetKeyDown(Input::KEY_LEFT)) {
@@ -216,7 +216,7 @@ DWORD WINAPI update(void* param) {
                 p->acceleration = p->force.scale(1.0f / p->mass);
                 p->velocity += p->acceleration.scale(dt);
                 p->position += p->velocity.scale(dt);
-                p->velocity = p->velocity.scale(0.9995f);
+                p->velocity = p->velocity.scale(0.9998f);
                 p->force = get_gravity_force(p->position, p->mass, singularity_position, singularity_mass);
         
                 particle_centers[i] = p->position;
@@ -390,7 +390,7 @@ int main(int argc, char** argv) {
 
         Input::Poll();
 
-        const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES * 10;
+        const float PARTICLE_SPAWN_COUNT_PER_SECOND = 10000;
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) {
             Particle p;
