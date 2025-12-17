@@ -17,6 +17,20 @@ Texture fire_texture;
 Texture smoke_texture;
 Texture galaxy_texture;
 GLFWwindow* g_window;
+bool toggle_gravity = true;
+int time_scale = 1;
+float singularity_mass = 1000000.0f; // In (KG) 
+
+Math::Vec3 get_gravity_force(Math::Vec3 position_a, float mass_a, Math::Vec3 position_b, float mass_b) {
+    if (!toggle_gravity) return Math::Vec3(0.0);
+
+    Math::Vec3 AB = (position_b - position_a).normalize();
+    float distance = Math::Vec3::Distance(position_a, position_b);
+    float force_magnitude = (float)(1 * ((mass_a * mass_b) / SQUARED(distance + 50)));
+
+    Math::Vec3 gravity_force = AB.scale(force_magnitude);
+    return gravity_force;
+}
 
 
 // Windows specific code
@@ -46,25 +60,18 @@ Win32Specific g_win32;
 #define MOVEMENT_PROFILE "movement"
 
 struct Particle {
-    Math::Vec3 scale = Math::Vec3(0.0f);
-    Math::Vec3 position =  Math::Vec3(0.0f);
-    Math::Quat orientation = Math::Quat::Identity();
-
-    float angular_velocity_z = 180; // 720 degree rotation per second
-    Math::Vec3 velocity = Math::Vec3(0, 1, 0);
-    char padding[8];
+    Math::Vec3 scale;
+    Math::Vec3 position;
+    Math::Vec3 velocity;
+    Math::Vec3 acceleration;
+    Math::Vec3 force;
+    float mass = 0.1f; // In (KG)
     // float lifetime = 0.0f;
-
-    // float color;
-    // Math::Quat orientations;
-    // Math::Vec3 scale;
-    // Geometry geometry;
-    // Math::Vec3 acceleration;
 };
 
 const int MAX_PARTICLES = 150000;
 Particle particles[MAX_PARTICLES];
-u32 next_available_particle_index;
+int next_available_particle_index = 0;
 
 void mouse(GLFWwindow* window, double mouse_x, double mouse_y) {
     static bool first = true;
@@ -98,6 +105,31 @@ void cbMasterProfile() {
 
     if (Input::GetKeyPressed(Input::KEY_R)) {
         particle_shader.compile();
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_G)) {
+        toggle_gravity = !toggle_gravity;
+        LOG_TRACE("mass: %s\n", singularity_mass ? "ON" : "OFF");
+    }
+
+    if (Input::GetKeyDown(Input::KEY_LEFT)) {
+        singularity_mass -= 10000.0f;
+        LOG_TRACE("mass: %f\n", singularity_mass);
+    }
+    
+    if (Input::GetKeyDown(Input::KEY_RIGHT)) {
+        singularity_mass += 10000.0f;
+        LOG_TRACE("mass: %f\n", singularity_mass);
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_UP)) {
+        time_scale += 1;
+        LOG_TRACE("time: %d\n", time_scale);
+    }
+    
+    if (Input::GetKeyPressed(Input::KEY_DOWN)) {
+        time_scale -= 1;
+        LOG_TRACE("time: %d\n", time_scale);
     }
 
     if (Input::GetKeyPressed(Input::KEY_L)) {
@@ -178,20 +210,17 @@ DWORD WINAPI update(void* param) {
                 particle_colors[i] = p->velocity.scale(1.0f / 10.0f);
             }
         #else
-            Math::Vec3 attractor_pos = Math::Vec3(500, 500, 500);
-            float pull_strength = 1000.0f;
-
+            Math::Vec3 singularity_position = Math::Vec3(500, 500, 500);
             for (int i = pr->start_index; i < pr->start_index + pr->length; i++) {
                 Particle* p = &particles[i];
-                Math::Vec3 dir = attractor_pos - p->position;
-                float dist = dir.magnitude();
-                if (dist > 0.1f) {
-                    p->velocity += dir.scale((pull_strength / (dist * dist)) * dt);
-                }
-
+                p->acceleration = p->force.scale(1.0f / p->mass);
+                p->velocity += p->acceleration.scale(dt);
                 p->position += p->velocity.scale(dt);
+                p->velocity = p->velocity.scale(0.9999f);
+                p->force = get_gravity_force(p->position, p->mass, singularity_position, singularity_mass);
+        
                 particle_centers[i] = p->position;
-                particle_colors[i] = p->velocity.scale(1.0f / 10.0f);
+                particle_colors[i] = p->velocity.scale(1.0f / 6.0f);
             }
         #endif
 
@@ -339,18 +368,19 @@ int main(int argc, char** argv) {
 
     float previous = 0;
     float timer = 2;
+    
 	while (!glfwWindowShouldClose(g_window)) {
         float current = glfwGetTime();
-        dt = current - previous;
+        float dt_for_fps = (current - previous);
+        dt = (current - previous) * time_scale;
         previous = current;
 
         accumulator += dt;
-
         if (timer == 0) {
             timer = 2;
-            LOG_DEBUG("FPS: %d\n", (int)(1.0f / dt));
+            LOG_DEBUG("FPS: %d\n", (int)(1.0f / dt_for_fps));
         } else {
-            timer = Math::MoveToward(timer, 0, dt);
+            timer = Math::MoveToward(timer, 0, dt_for_fps);
         }
 
         Input::Poll();
@@ -358,7 +388,7 @@ int main(int argc, char** argv) {
         const float PARTICLE_SPAWN_COUNT_PER_FRAME = 50;
         for (int i = 0; i < PARTICLE_SPAWN_COUNT_PER_FRAME; i++) {
             if (next_available_particle_index == MAX_PARTICLES - 1) break;
-            
+
             Particle p;
             #if 1
                 float angle = 50.0f * accumulator + (i * 0.1f);
