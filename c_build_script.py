@@ -29,7 +29,7 @@ pc: ProjectConfig = ProjectConfig(
     ],
     project_debug_with_visual_studio = True,
     project_rebuild_project_dependencies = False,
-    project_executable_names = ["particle.exe"]
+    project_executable_names = ["terrain_scene.exe", "particle.exe"]
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():

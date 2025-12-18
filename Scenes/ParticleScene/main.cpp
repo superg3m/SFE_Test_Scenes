@@ -9,7 +9,7 @@ float dt = 0;
 float WIDTH = 900;
 float HEIGHT = 900;
 float accumulator = 0;
-Camera camera = Camera(0, 1, 10);
+Camera camera = Camera(0, 1, 20);
 ShaderNoMaterial particle_shader;
 GFX::Geometry particle;
 DS::Vector<Math::Vec3> particle_centers;
@@ -120,12 +120,12 @@ void cbMasterProfile() {
     }
 
     if (Input::GetKeyPressed(Input::KEY_UP)) {
-        time_scale += 0.1f;
+        time_scale += 0.25f;
         LOG_TRACE("time: %f\n", time_scale);
     }
     
     if (Input::GetKeyPressed(Input::KEY_DOWN)) {
-        time_scale -= 0.1f;
+        time_scale -= 0.25f;
         LOG_TRACE("time: %f\n", time_scale);
     }
 
@@ -183,7 +183,7 @@ void update_worker(int index) {
             });
         }
 
-        Math::Vec3 singularity_position = Math::Vec3(500, 500, 500);
+        Math::Vec3 singularity_position = Math::Vec3(250, 250, 250);
         for (int i = pr.start_index; i < pr.start_index + pr.length; i++) {
             Particle* p = &particles[i];
             p->acceleration = p->force.scale(1.0f / p->mass);
@@ -347,7 +347,7 @@ int main(int argc, char** argv) {
         
         Input::Poll();
         
-        const float PARTICLE_SPAWN_COUNT_PER_SECOND = 10000;
+        const float PARTICLE_SPAWN_COUNT_PER_SECOND = 3000;
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) { 
             Particle p; 
