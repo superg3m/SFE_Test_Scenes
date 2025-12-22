@@ -1,2 +1,6 @@
 - Render text
-- Terminal (reset command, set time_scale 1.5 | set mass 43533 | set gravity true) 
+- Terminal (reset command, set time_scale 1.5 | set mass 43533 | set gravity true)
+- Scrollback
+- Nice terminal drop animation (j_blow video)
+- Nice errors
+- scrollback
