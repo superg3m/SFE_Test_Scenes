@@ -1,0 +1,2 @@
+- Render text
+- Terminal (reset command, set time_scale 1.5 | set mass 43533 | set gravity true) 
