@@ -1,0 +1,4 @@
+- Render a single ortho quad center screen
+- Render a single quad based on the codepoint given and the offset and baseline
+- Blackboard how fonts work: https://guide.handmadehero.org/code/day162/#4570
+- Using the stb_truetype library: https://guide.handmadehero.org/code/day163/#92
