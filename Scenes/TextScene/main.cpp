@@ -26,8 +26,8 @@ void render() {
     glClearColor(0.2f, 0.2f, 0.2f, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Math::Mat4 orthographic = GFX::GetProjectionMatrix2D($app.WIDTH, $app.HEIGHT);
-    // $app.text_shader.setProjection(orthographic);
+    Math::Mat4 orthographic = GFX::GetProjectionMatrix2D($app.WIDTH, $app.HEIGHT);
+    $app.text_shader.setProjection(orthographic);
     // particle.drawInstanced(&particle_shader, particle_count);
 }
 

@@ -12,17 +12,18 @@ out vec2 v_TexCoord;
 out vec3 v_Color;
 
 void main() {
-    vec2 BillboardSize = vec2(1.5); 
-    vec3 CameraRight_worldspace = vec3(uView[0][0], uView[1][0], uView[2][0]);
-    vec3 CameraUp_worldspace = vec3(uView[0][1], uView[1][1], uView[2][1]);
+    vec2 billboard_size = vec2(1.5); 
 
-    vec3 vertexPosition_worldspace = (
+    vec3 worldspace_camera_right_vector = vec3(uView[0][0], uView[1][0], uView[2][0]);
+    vec3 worldspace_camera_up_vector = vec3(uView[0][1], uView[1][1], uView[2][1]);
+
+    vec3 worldspace_cannoncial_vertex_position = (
         aCenter + 
-        (CameraRight_worldspace * aPos.x * BillboardSize.x) + 
-        (CameraUp_worldspace * aPos.y * BillboardSize.y)
+        (worldspace_camera_right_vector * aPos.x * billboard_size.x) + 
+        (worldspace_camera_up_vector * aPos.y * billboard_size.y)
     );
 
     v_Color = aColor;
     v_TexCoord = aTexCoord;
-    gl_Position = uProjection * uView * vec4(vertexPosition_worldspace, 1);
+    gl_Position = uProjection * uView * vec4(worldspace_cannoncial_vertex_position, 1);
 }

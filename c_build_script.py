@@ -29,7 +29,7 @@ pc: ProjectConfig = ProjectConfig(
     ],
     project_debug_with_visual_studio = True,
     project_rebuild_project_dependencies = False,
-    project_executable_names = ["terrain_scene.exe", "particle.exe"]
+    project_executable_names = ["text.exe"]
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():
@@ -84,6 +84,17 @@ elif IS_DARWIN():
         "-framework IOKit",
         "-framework CoreFoundation",
     ]
+    
+include_paths =  [
+    "../..",
+    "../../SFE",
+
+    "../../SFE/Vendor",
+    "../../SFE/Vendor/stb",
+    "../../SFE/Vendor/glad/include", 
+    "../../SFE/Vendor/glfw",
+    "../../SFE/Vendor/assimp/include",
+]
 
 procedures_config = {
     "terrain_scene": ProcedureConfig(
@@ -94,37 +105,7 @@ procedures_config = {
             "../../Scenes/TerrainScene/Shaders/**/*.cpp",
         ],
         additional_libs = libs,
-        include_paths = [
-            "../..",
-            "../../SFE",
-
-            "../../SFE/Vendor",
-            "../../SFE/Vendor/stb",
-            "../../SFE/Vendor/glad/include", 
-            "../../SFE/Vendor/glfw",
-            "../../SFE/Vendor/assimp/include",
-        ],
-        compiler_inject_into_args=inject
-    ),
-    
-    "instanced quad": ProcedureConfig(
-        build_directory = f"./{build_postfix}",
-        output_name = f"instanced_quad.exe",
-        source_files = [
-            "../../Scenes/InstancedAsteroidScene/main.cpp",
-            "../../Scenes/InstancedAsteroidScene/Shaders/**/*.cpp",
-        ],
-        additional_libs = libs,
-        include_paths = [
-            "../..",
-            "../../SFE",
-
-            "../../SFE/Vendor",
-            "../../SFE/Vendor/stb",
-            "../../SFE/Vendor/glad/include", 
-            "../../SFE/Vendor/glfw",
-            "../../SFE/Vendor/assimp/include",
-        ],
+        include_paths = include_paths,
         compiler_inject_into_args=inject
     ),
     
@@ -136,16 +117,19 @@ procedures_config = {
             "../../Scenes/ParticleScene/Shaders/**/*.cpp",
         ],
         additional_libs = libs,
-        include_paths = [
-            "../..",
-            "../../SFE",
-
-            "../../SFE/Vendor",
-            "../../SFE/Vendor/stb",
-            "../../SFE/Vendor/glad/include", 
-            "../../SFE/Vendor/glfw",
-            "../../SFE/Vendor/assimp/include",
+        include_paths = include_paths,
+        compiler_inject_into_args=inject
+    ),
+    
+    "text scene": ProcedureConfig(
+        build_directory = f"./{build_postfix}",
+        output_name = f"text.exe",
+        source_files = [
+            "../../Scenes/TextScene/main.cpp",
+            "../../Scenes/TextScene/Shaders/**/*.cpp",
         ],
+        additional_libs = libs,
+        include_paths = include_paths,
         compiler_inject_into_args=inject
     )
 }
