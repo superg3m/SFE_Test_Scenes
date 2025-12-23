@@ -1,0 +1,2 @@
+Blackboard how fonts work: https://guide.handmadehero.org/code/day162/#4570
+Using the stb_truetype library: https://guide.handmadehero.org/code/day163/#92
