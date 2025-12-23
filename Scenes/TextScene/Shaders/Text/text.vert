@@ -9,5 +9,5 @@ out vec2 v_TexCoord;
 
 void main() {
     v_TexCoord = aTexCoord;
-    gl_Position = uProjection * vec4(aPos, 1);
+    gl_Position = vec4(aPos, 1);
 }

@@ -1,37 +1,6 @@
 #include <SFE/sfe.hpp>
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <atomic>
-
-struct AppState {
-    float dt = 0;
-    float WIDTH = 900;
-    float HEIGHT = 900;
-    float accumulator = 0;
-    ShaderNoMaterial text_shader; // probably need to make this Shader3DNoMaterial and Shader2DNoMaterial or something like this
-    Random::Seed seed = Random::GenerateSeed(451);
-    Memory::GeneralAllocator allocator = Memory::GeneralAllocator();
-    GLFWwindow* window;
-
-    AppState() {
-        Memory::bindAllocator(&this->allocator);
-    }
-};
-
-AppState $app; // Global I saw this once and I kind of like it...
-
-void render() {
-    glClearColor(0.2f, 0.2f, 0.2f, 0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    Math::Mat4 orthographic = GFX::GetProjectionMatrix2D($app.WIDTH, $app.HEIGHT);
-    $app.text_shader.setProjection(orthographic);
-    // particle.drawInstanced(&particle_shader, particle_count);
-}
-
-GLFWwindow* GLFW_INIT() {
+GLFWwindow* GLFW_INIT(int WIDTH, int HEIGHT) {
     RUNTIME_ASSERT_MSG(glfwInit(), "Failed to init glfw\n");
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -43,7 +12,7 @@ GLFWwindow* GLFW_INIT() {
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     #endif
 
-    GLFWwindow* window = glfwCreateWindow($app.WIDTH, $app.HEIGHT, "LearnOpenGL", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
     if (window == nullptr) {
         LOG_ERROR("Failed to create GLFW window\n");
         glfwTerminate();
@@ -60,33 +29,111 @@ GLFWwindow* GLFW_INIT() {
 
     glfwSwapInterval(1);
 
+    glEnable(GL_MULTISAMPLE);  
     GFX::SetDepthTest(true);
     GFX::SetStencilTest(true);
 
     return window;
 }
 
+void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (key > 255 || action != GLFW_PRESS) return;
+
+    LOG_DEBUG("Key: (%c, %d) | IS_ALPHA: %s\n", (unsigned char)key, key, CHAR_IS_ALPHA(key) ? "TRUE" : "FALSE");
+}
+
+struct AppState {
+    Random::Seed seed = Random::GenerateSeed(451);
+    Memory::GeneralAllocator allocator = Memory::GeneralAllocator();
+    GLFWwindow* window;
+
+    float dt = 0;
+    float WIDTH = 900;
+    float HEIGHT = 900;
+    float accumulator = 0;
+
+    GFX::Geometry quad;
+    ShaderNoMaterial text_shader; // probably need to make this Shader3DNoMaterial and Shader2DNoMaterial or something like this
+    Texture texture;
+
+    AppState() {
+        Memory::bindAllocator(&this->allocator);
+        this->window = GLFW_INIT(this->WIDTH, this->HEIGHT);
+
+        {
+            size_t file_size = 0;
+            Error error = Error::SUCCESS;
+            const char* font_path = "C:/Windows/Fonts/arial.ttf";
+            u8* ttf_data = Platform::ReadEntireFile(font_path, file_size, error);
+            RUNTIME_ASSERT_MSG(error == Error::SUCCESS, "%s\n", getErrorString(error));           
+
+            stbtt_fontinfo font;
+            stbtt_InitFont(&font, ttf_data, stbtt_GetFontOffsetForIndex(ttf_data, 0));
+
+            int width = 0;
+            int height = 0;
+            int codepoint = 'N';
+            int pixel_scale = 128;
+            int x_offset = 0;
+            int y_offset = 0;
+            u8* mono_bitmap = stbtt_GetCodepointBitmap(&font, 0, stbtt_ScaleForPixelHeight(&font, pixel_scale), codepoint, &width, &height, &x_offset, &y_offset);
+
+            u32* rgba_bitmap = (u32*)Memory::Malloc(sizeof(u32) * width * height);
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    int mono_sample_index = (((height - 1) - y) * width) + x;
+                    u8 alpha = mono_bitmap[mono_sample_index];
+                    rgba_bitmap[(y * width) + x] = (alpha << 24)|(alpha << 16)|(alpha << 8)|(alpha << 0);
+                }
+            }
+
+            // can cache glyph here and make opengl texture from memory
+            this->texture = Texture::LoadFromMemory((u8*)rgba_bitmap, width, height, 4, true);
+
+            stbtt_FreeBitmap(mono_bitmap, nullptr);
+            Memory::Free(ttf_data);
+            Memory::Free(rgba_bitmap);
+        }
+
+        Math::Vec3 tr = Math::Vec3(+0.05f, +0.05f, +0.0f);
+        Math::Vec3 br = Math::Vec3(+0.05f, -0.05f, +0.0f);
+        Math::Vec3 bl = Math::Vec3(-0.05f, -0.05f, +0.0f);
+        Math::Vec3 tl = Math::Vec3(-0.05f, +0.05f, +0.0f);
+
+        this->quad = GFX::Geometry::Quad(tr, br, bl, tl);
+        this->text_shader = ShaderNoMaterial({"../../Scenes/TextScene/Shaders/Text/text.vert", "../../Scenes/TextScene/Shaders/Text/text.frag"});
+    }
+};
+
+AppState app;
+
+void render() {
+    glClearColor(0.2f, 0.2f, 0.2f, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    app.text_shader.setTexture2D("uTexture", 0, app.texture);
+    app.quad.draw(&app.text_shader);
+}
+
 int main(int argc, char** argv) {
-    $app.window = GLFW_INIT();
     Input::Init();
-    if (!Input::GLFW_SETUP($app.window)) {
+    if (!Input::GLFW_SETUP(app.window)) {
         LOG_ERROR("Failed to setup GLFW\n");
         glfwTerminate();
         exit(-1);
     }
 
-    // particle = GFX::Geometry::Quad();
-    // particle_shader = ShaderNoMaterial({"../../Scenes/ParticleScene/Shaders/Particle/particle.vert", "../../Scenes/ParticleScene/Shaders/Particle/particle.frag"});
+    Input::GLFW_BIND_KEY_CALLBACK(keyboard);
 
     float previous = 0;
     float timer = 2;
-	while (!glfwWindowShouldClose($app.window)) {
+	while (!glfwWindowShouldClose(app.window)) {
         float current = glfwGetTime();
         float dt_for_fps = (current - previous);
-        $app.dt = (current - previous);
+        app.dt = (current - previous);
         previous = current;
 
-        $app.accumulator += $app.dt;
+        app.accumulator += app.dt;
         if (timer == 0) {
             timer = 2;
             LOG_DEBUG("FPS: %d\n", (int)(1.0f / dt_for_fps));
@@ -97,7 +144,7 @@ int main(int argc, char** argv) {
         Input::Poll();
         render();
         
-        glfwSwapBuffers($app.window);
+        glfwSwapBuffers(app.window);
         glfwPollEvents();
     }
 
