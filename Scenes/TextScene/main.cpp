@@ -55,6 +55,10 @@ void my_stbtt_initfont() {
     stbtt_fontinfo font;
     stbtt_InitFont(&font, ttf_data, stbtt_GetFontOffsetForIndex(ttf_data, 0));
 
+    int ascent, descent, lineGap;
+    stbtt_GetFontVMetrics(&font, &ascent, &descent, &lineGap);
+    
+
     int width = 0;
     int height = 0;
     int codepoint = 'N';
