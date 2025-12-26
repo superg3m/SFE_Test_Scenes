@@ -230,7 +230,7 @@ void render() {
     particle_center_buffer.updateEntireBuffer(particle_centers);
     particle_color_buffer.updateEntireBuffer(particle_colors);
     particle_shader.setTexture2D("uTexture", 0, smoke_texture);
-    particle.drawInstanced(&particle_shader, particle_count);
+    GFX::DrawGeometryInstanced(particle, &particle_shader, particle_count);
 }
 
 GLFWwindow* GLFW_INIT() {

@@ -215,7 +215,7 @@ void display() {
     model = Math::Mat4::Identity();
     model = Math::Mat4::Translate(model, light_position);
     uniform_shader.setModel(model);
-    light.draw(&uniform_shader);
+    GFX::DrawGeometry(light, &uniform_shader);
 
 
     model = Math::Mat4::Identity();
@@ -230,7 +230,7 @@ void display() {
     terrain_shader.setVec3("uLightPosition", light_position);
     terrain_shader.setBool("uRenderShading", render_shading);
     terrain_shader.setBool("uRenderNormals", render_normals);
-    terrain.draw(&terrain_shader);
+    GFX::DrawGeometry(terrain, &terrain_shader);
 
     model = Math::Mat4::Identity();
     model = Math::Mat4::Scale(model, diffuse.width * TERRAIN_SCALE, diffuse.height * TERRAIN_SCALE, 1);
@@ -241,7 +241,7 @@ void display() {
     cloud_shader.setFloat("uOffsetX", cosf(0.05 * accumulator));
     cloud_shader.setFloat("uOffsetY", sinf(0.05 * accumulator));
     GFX::SetBlending(true);
-    clouds.draw(&cloud_shader);
+    GFX::DrawGeometry(clouds, &cloud_shader);
     GFX::SetBlending(false);
 
     // LOG_WARN("Draw Call Count: %d\n", GFX::GetDrawCallCount());

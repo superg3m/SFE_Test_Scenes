@@ -1,5 +1,4 @@
 #include <SFE/sfe.hpp>
-#include "glyph.hpp"
 
 GLFWwindow* GLFW_INIT(int WIDTH, int HEIGHT) {
     RUNTIME_ASSERT_MSG(glfwInit(), "Failed to init glfw\n");
@@ -30,7 +29,9 @@ GLFWwindow* GLFW_INIT(int WIDTH, int HEIGHT) {
 
     glfwSwapInterval(1);
 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
     glEnable(GL_MULTISAMPLE);  
+
     GFX::SetDepthTest(true);
     GFX::SetStencilTest(true);
 
@@ -55,19 +56,14 @@ struct AppState {
 
     ShaderNoMaterial text_shader; // probably need to make this Shader3DNoMaterial and Shader2DNoMaterial or something like this
     Texture texture;
-    Font font;
+    GFX::Font font;
 
     AppState() {
         Memory::bindAllocator(&this->allocator);
         this->window = GLFW_INIT(this->WIDTH, this->HEIGHT);
 
-        size_t file_size = 0;
-        Error error = Error::SUCCESS;
         const char* font_path = "C:/Windows/Fonts/arial.ttf";
-        u8* ttf_data = Platform::ReadEntireFile(font_path, file_size, error);
-        RUNTIME_ASSERT_MSG(error == Error::SUCCESS, "%s\n", getErrorString(error));           
-
-        LoadFontAndCacheGlyphs(this->font, ttf_data, 64, '!', '~');
+        this->font = GFX::Font::Create(font_path, 32,  ' ', '~');    
 
         this->text_shader = ShaderNoMaterial({"../../Scenes/TextScene/Shaders/Text/text.vert", "../../Scenes/TextScene/Shaders/Text/text.frag"});
     }
@@ -102,22 +98,9 @@ void render() {
 
     app.text_shader.setProjection(orthographic);
 
-    const char* text = "the";
-    float x_position = app.WIDTH / 2;
-    for (int i = 0; i < String::Length(text); i++) {
-        char codepoint = text[i];
-        Glyph g = app.font.glyphs.get(codepoint);
 
-        Math::Mat4 model = Math::Mat4::Identity();
-        model = Math::Mat4::Scale(model, 1);
-        model = Math::Mat4::Translate(model, x_position, app.HEIGHT / 2, 1);
-
-        app.text_shader.setModel(model);
-        app.text_shader.setTexture2D("uTexture", 0, g.texture);
-        g.quad.draw(&app.text_shader);
-
-        x_position += g.x_advance;
-    }
+    const char* text = "Wow this works\nthis doens't work does it?";
+    DrawText(app.font, text, 200, 200, &app.text_shader);
 }
 
 int main(int argc, char** argv) {

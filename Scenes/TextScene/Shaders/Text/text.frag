@@ -7,9 +7,5 @@ uniform sampler2D uTexture;
 
 void main() {
     vec4 bmp = texture(uTexture, v_TexCoord).rgba;
-    if (bmp.a < 0.1) {
-        discard;
-    }
-
     FragColor = bmp;
 }
