@@ -5,7 +5,8 @@ struct Glyph {
     int x_baseline_offset;
     int y_baseline_offset;
     float x_advance;
-    Texture bitmap;
+    Texture texture;
+    GFX::Geometry quad;
 };
 
 struct Font {
@@ -18,6 +19,7 @@ struct Font {
     float line_height;
 
     DS::Hashmap<int, Glyph> glyphs;
+
 };
 
 bool LoadFontAndCacheGlyphs(Font &font, const unsigned char* ttf_data, float font_point_scale, int first_codepoint, int last_codepoint) {
@@ -53,10 +55,16 @@ bool LoadFontAndCacheGlyphs(Font &font, const unsigned char* ttf_data, float fon
             &glyph.y_baseline_offset
         );
 
-        glyph.bitmap = Texture::LoadFromMemory(bmp, glyph.width, glyph.height, 4, true);
-        stbtt_FreeBitmap(bmp, nullptr);
+        // Texture::FlipVerticallyInPlace(bmp, glyph.width, glyph.height);
+        glyph.texture = Texture::LoadFromMemory(bmp, glyph.width, glyph.height, 1, false);
 
+        Math::Vec3 tr = Math::Vec3(glyph.width, glyph.height, +0.0f);
+        Math::Vec3 br = Math::Vec3(glyph.width, 0, +0.0f);
+        Math::Vec3 bl = Math::Vec3(0, 0, +0.0f);
+        Math::Vec3 tl = Math::Vec3(0, glyph.height, +0.0f);
+        glyph.quad = GFX::Geometry::Quad(tr, br, bl, tl);
         font.glyphs.put(codepoint, glyph);
+        stbtt_FreeBitmap(bmp, nullptr);
     }
 
     return true;

@@ -29,7 +29,7 @@ pc: ProjectConfig = ProjectConfig(
     ],
     project_debug_with_visual_studio = False,
     project_rebuild_project_dependencies = True,
-    project_executable_names = ["particle.exe"]
+    project_executable_names = ["text.exe"]
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():
@@ -103,7 +103,7 @@ include_paths =  [
 procedures_config = {
     "terrain_scene": ProcedureConfig(
         build_directory = f"./{build_postfix}",
-        output_name = f"terrain_scene.exe",
+        output_name = f"terrain.exe",
         source_files = [
             "../../Scenes/TerrainScene/main.cpp",
             "../../Scenes/TerrainScene/Shaders/**/*.cpp",
