@@ -1,0 +1,4 @@
+- screen space reflections
+
+- render twice and flip then use a sencil shader to allow you do turn the opacity down. 
+so like have a street floor and where this is puddles of what you can turn the opacity to almost zero and see through that little part.

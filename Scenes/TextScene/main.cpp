@@ -54,7 +54,7 @@ struct AppState {
     float HEIGHT = 900;
     float accumulator = 0;
 
-    ShaderNoMaterial text_shader; // probably need to make this Shader3DNoMaterial and Shader2DNoMaterial or something like this
+    ShaderNoMaterial text_shader;
     Texture texture;
     GFX::Font font;
 
@@ -98,9 +98,8 @@ void render() {
 
     app.text_shader.setProjection(orthographic);
 
-
-    const char* text = "Wow this works\nthis doens't work does it?";
-    DrawText(app.font, text, 200, 200, &app.text_shader);
+    const char* text = "Wow this works\nthis doesn't work does it?";
+    GFX::DrawText(app.font, text, 200, 200, &app.text_shader);
 }
 
 int main(int argc, char** argv) {
