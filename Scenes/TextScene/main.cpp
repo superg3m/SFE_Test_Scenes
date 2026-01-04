@@ -62,7 +62,12 @@ struct AppState {
         Memory::bindAllocator(&this->allocator);
         this->window = GLFW_INIT(this->WIDTH, this->HEIGHT);
 
-        const char* font_path = "C:/Windows/Fonts/arial.ttf";
+        #if defined(PLATFORM_WINDOWS)
+            const char* font_path = "C:/Windows/Fonts/arial.ttf";
+        #elif defined(PLATFORM_APPLE)
+            const char* font_path = "/Library/Fonts/Arial Unicode.ttf";
+        #endif
+
         this->font = GFX::Font::Create(font_path, 32,  ' ', '~');    
 
         this->text_shader = ShaderNoMaterial({"../../Scenes/TextScene/Shaders/Text/text.vert", "../../Scenes/TextScene/Shaders/Text/text.frag"});
