@@ -1,8 +1,7 @@
 # On going development
 
 
-[![Demo Video](https://www.youtube.com/watch?v=-MbyTzapVAc/0.jpg)](https://www.youtube.com/watch?v=-MbyTzapVAc)
-
+[![Having fun with opengl](https://img.youtube.com/vi/-MbyTzapVAc/maxresdefault.jpg)](https://www.youtube.com/watch?v=-MbyTzapVAc)
 
 
 # Building and Run (Builds for windows, macos. Trivial to make it build for linux)
@@ -26,7 +25,7 @@
 ```
 https://wikis.khronos.org/opengl/Buffer_Object_Streaming
 https://www.opengl-tutorial.org/intermediate-tutorials/billboards-particles/particles-instancing/
-// make quad billboards (https://www.opengl-tutorial.org/intermediate-tutorials/billboards-particles/billboards)
+
 // Write a macros for speeding up the math library for examples
 #if defined(PLATFORM_WINDOWS)
     #define MATH_SQRT() WINDOWS_INSTRINSIC_SQRT()
