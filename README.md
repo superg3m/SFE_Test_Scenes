@@ -1,6 +1,9 @@
 # On going development
 
-https://youtu.be/-MbyTzapVAc
+
+[![Demo Video](https://www.youtube.com/watch?v=-MbyTzapVAc/0.jpg)](https://www.youtube.com/watch?v=-MbyTzapVAc)
+
+
 
 # Building and Run (Builds for windows, macos. Trivial to make it build for linux)
 - **Bootstrap:** `./c_build/bootstrap.ps1`
