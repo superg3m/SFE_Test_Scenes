@@ -1,7 +1,8 @@
 # On going development
 
-
-[![Having fun with opengl](https://img.youtube.com/vi/-MbyTzapVAc/maxresdefault.jpg)](https://www.youtube.com/watch?v=-MbyTzapVAc)
+<a href="https://www.youtube.com/watch?v=-MbyTzapVAc" target="_blank">
+  <img src="https://img.youtube.com/vi/-MbyTzapVAc/maxresdefault.jpg" alt="Having fun with opengl" style="width:100%;">
+</a>
 
 
 # Building and Run (Builds for windows, macos. Trivial to make it build for linux)
