@@ -1,6 +1,6 @@
 # On going development
 
-<a href="https://www.youtube.com/watch?v=-MbyTzapVAc" target="_blank">
+<a href="https://www.youtube.com/watch?v=-MbyTzapVAc" target="_blank" rel="noopener noreferrer">
   <img src="https://img.youtube.com/vi/-MbyTzapVAc/maxresdefault.jpg" alt="Having fun with opengl" style="width:100%;">
 </a>
 
