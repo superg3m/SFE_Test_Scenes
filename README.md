@@ -1,7 +1,13 @@
 # On going development
 
-<video src="./Assets/Videos/demo.mp4" width="640" height="480" controls></video>
+https://youtu.be/-MbyTzapVAc
 
+# Building and Run (Builds for windows, macos. Trivial to make it build for linux)
+- **Bootstrap:** `./c_build/bootstrap.ps1`
+- **c_build.ps1 (Release):** `./c_build.ps1 -BuildType release -Clean -Build -Run`
+- **c_build.ps1 (Debug):** `./c_build.ps1 -BuildType debug -Clean -Build -Run` or `./c_build.ps1 -Debugger`
+
+# For me:
 - [x] TerrainScene
 - [x] ParticleScenes (parallelism is broken for c++, but works for winapi)
 - [x] TextScene (No Kerning)
