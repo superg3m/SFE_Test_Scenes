@@ -14,8 +14,8 @@ ShaderNoMaterial particle_shader;
 GFX::Geometry particle;
 DS::Vector<Math::Vec3> particle_centers;
 DS::Vector<Math::Vec3> particle_colors;
-GFX::GPUBuffer particle_center_buffer;
-GFX::GPUBuffer particle_color_buffer;
+GFX::VertexBuffer particle_center_buffer;
+GFX::VertexBuffer particle_color_buffer;
 bool mouse_captured = false;
 Random::Seed seed;
 Texture fire_texture;
@@ -302,13 +302,13 @@ int main(int argc, char** argv) {
     particle_centers = DS::Vector<Math::Vec3>(MAX_PARTICLES, MAX_PARTICLES);
     particle_colors = DS::Vector<Math::Vec3>(MAX_PARTICLES, MAX_PARTICLES);
 
-    particle_center_buffer = GFX::GPUBuffer::VBO(
+    particle_center_buffer = GFX::VertexBuffer::Create(
         GFX::BufferUsage::DYNAMIC,
         {GFX::AttributeDesc(0, GFX::BufferStrideTypeInfo::VEC3)},
         particle_centers
     );
 
-    particle_color_buffer = GFX::GPUBuffer::VBO(
+    particle_color_buffer = GFX::VertexBuffer::Create(
         GFX::BufferUsage::DYNAMIC,
         {GFX::AttributeDesc(0, GFX::BufferStrideTypeInfo::VEC3)},
         particle_colors
