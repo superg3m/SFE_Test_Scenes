@@ -347,7 +347,7 @@ int main(int argc, char** argv) {
         
         Input::Poll();
         
-        const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES * 60; // 3000; // MAX_PARTICLES * 60;
+        const float PARTICLE_SPAWN_COUNT_PER_SECOND = 3000; // MAX_PARTICLES * 60;
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) { 
             Particle p; 
