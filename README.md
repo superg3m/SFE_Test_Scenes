@@ -13,13 +13,13 @@
 # For me:
 - [x] TerrainScene
 - [x] ParticleScenes (parallelism is broken for c++, but works for winapi)
-- [x] TextScene (No Kerning)
+- [x] TextScene (No Kerning, also doesn't do instancing or any type of batching...)
+- [ ] ChurchScene
 - [ ] WaterScene
 - [ ] FogScene
 - [ ] PBRScene
 - [ ] InstancedAsteroidScene
 - [ ] GUIScene
-- [ ] LightingScene
 - [ ] TransparencyScene
 - [ ] FallingSandScene: https://www.youtube.com/watch?v=HrrJxkRlRfk
 
