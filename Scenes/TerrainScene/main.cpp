@@ -8,7 +8,6 @@ GFX::Geometry terrain;
 GFX::Geometry clouds;
 GFX::Geometry light;
 
-bool emit = false;
 Texture diffuse;
 Texture height;
 Texture cloud;
@@ -63,10 +62,6 @@ void cbMasterProfile() {
     if (Input::GetKeyPressed(Input::KEY_K)) {
         smooth_camera = !smooth_camera;
         Input::ToggleProfile(MOVEMENT_PROFILE, movement_profile_active && !smooth_camera);
-    }
-
-    if (Input::GetKeyPressed(Input::KEY_0)) {
-        emit = !emit;
     }
 
     if (SHIFT && Input::GetKeyPressed(Input::KEY_W)) {
@@ -195,6 +190,8 @@ void display() {
     Math::Mat4 perspective = GFX::GetProjectionMatrix3D(WIDTH, HEIGHT, camera.zoom);
     Math::Mat4 view = camera.getViewMatrix();
 
+    view.transpose().print();
+
     cloud_shader.setProjection(perspective);
     terrain_shader.setProjection(perspective);
     uniform_shader.setProjection(perspective);
@@ -204,13 +201,6 @@ void display() {
     uniform_shader.setView(view);
 
     Math::Mat4 model = Math::Mat4::Identity();
-    // model = Math::Mat4::Scale(model, 5);
-    // model = Math::Mat4::Rotate(model, Math::Quat::FromEuler(90, 90, 0));
-    // model = Math::Mat4::Translate(model, 0, 5, 0);
-    // model_shader.setModel(model);
-    // model_shader.setEmissiveMaterial(emit);
-    // church.draw(&model_shader);
-
 
     model = Math::Mat4::Identity();
     model = Math::Mat4::Translate(model, light_position);
