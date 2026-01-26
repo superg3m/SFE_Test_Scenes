@@ -50,7 +50,7 @@ struct Material {
 #define NR_POINT_LIGHTS 4
 
 uniform Material uMaterial;
-uniform vec3 uViewPosition;
+uniform vec3 uCameraPosition;
 
 uniform DirLight uDirectionalLight;
 uniform PointLight uPointLights[NR_POINT_LIGHTS];
@@ -58,6 +58,7 @@ uniform SpotLight uSpotLight;
 
 uniform bool uUseFlashlight; 
 uniform bool uBlinnPhong;
+uniform bool uApplyEmissiveMaterial;
 
 in vec3 v_FragPos;
 in vec3 v_Normal;
@@ -137,7 +138,7 @@ vec3 CalcSpotLight(const SpotLight light, vec3 diffuse_texel, vec3 specular_texe
 
 void main() {     
     vec3 N = normalize(v_Normal);
-    vec3 V = normalize(uViewPosition - v_FragPos);
+    vec3 V = normalize(uCameraPosition - v_FragPos);
 
     vec3 diffuse_texel = texture(uMaterial.diffuse_map, v_TexCoord).rgb;
     vec3 specular_texel = texture(uMaterial.specular_map, v_TexCoord).rgb;
