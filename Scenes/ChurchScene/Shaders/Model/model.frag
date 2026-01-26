@@ -37,6 +37,27 @@ struct SpotLight {
 
 struct Material {
     sampler2D diffuse_map;
+    bool has_diffuse_map;
+
+    sampler2D specular_map;
+    bool has_specular_map;
+
+    sampler2D normal_map;
+    bool has_normals;
+
+    sampler2D emissive_map;
+    bool has_emissive_map;
+
+    vec3 ambient_color;
+    vec3 diffuse_color;
+    vec3 specular_color;
+
+    float shininess;
+    float opacity;
+};
+
+struct Material {
+    sampler2D diffuse_map;
     sampler2D specular_map;
 
     vec3 ambient_color;
@@ -143,15 +164,18 @@ void main() {
     vec3 diffuse_texel = texture(uMaterial.diffuse_map, v_TexCoord).rgb;
     vec3 specular_texel = texture(uMaterial.specular_map, v_TexCoord).rgb;
     
-    vec3 total_light_result = vec3(0.0f); 
-    total_light_result += CalcDirectionalLight(uDirectionalLight, diffuse_texel, specular_texel, N, V);
-
+    vec3 final_rgb += CalcDirectionalLight(uDirectionalLight, diffuse_texel, specular_texel, N, V);
     for(int i = 0; i < NR_POINT_LIGHTS; i++) {
-        total_light_result += CalcPointLight(uPointLights[i], diffuse_texel, specular_texel, N, V);         
+        final_rgb += CalcPointLight(uPointLights[i], diffuse_texel, specular_texel, N, V);         
     }
 
     if (uUseFlashlight) {
-        total_light_result += CalcSpotLight(uSpotLight, diffuse_texel, specular_texel, N, V);       
+        final_rgb += CalcSpotLight(uSpotLight, diffuse_texel, specular_texel, N, V);       
+    }
+
+    if (uApplyEmissiveMaterial && uMaterial.has_emissive_map) {
+        vec3 emissive = texture(uMaterial.emissive_map, v_TexCoord).rgb;
+        final_rgb += emissive;
     }
     
     FragColor = vec4(total_light_result, uMaterial.opacity);

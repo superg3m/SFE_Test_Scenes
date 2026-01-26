@@ -133,6 +133,10 @@ void display() {
     GFX::DrawGeometry(skybox_geo, &skybox_shader);
     glDepthFunc(GL_LESS);
 
+    model = Math::Mat4::Identity();
+    model = Math::Mat4::Scale(model, 5);
+    model = Math::Mat4::Rotate(model, Math::Quat::FromEuler(90, 90, 0));
+    model = Math::Mat4::Translate(model, 0, 5, 0);
     church_shader.setModel(model);
     church_shader.setView(view);
     church_shader.setProjection(perspective);
