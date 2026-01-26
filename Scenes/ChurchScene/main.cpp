@@ -10,6 +10,8 @@ GFX::Geometry skybox_geo;
 ShaderNoMaterial skybox_shader;
 Texture sky_cubemap;
 
+// PointLight point_light;
+
 struct ApplicationState {
     float dt = 0;
     float accumulator = 0;
@@ -131,6 +133,11 @@ void display() {
     GFX::DrawGeometry(skybox_geo, &skybox_shader);
     glDepthFunc(GL_LESS);
 
+    church_shader.setModel(model);
+    church_shader.setView(view);
+    church_shader.setProjection(perspective);
+    GFX::DrawGeometry(church, &church_shader);
+
     GFX::ClearTelemetry();
 }
 
@@ -199,6 +206,7 @@ int main(int argc, char** argv) {
     Input::CreateProfile(MOVEMENT_PROFILE, cbMovementProfile);
     
     skybox_shader = ShaderNoMaterial({"../../Scenes/ChurchScene/Shaders/Skybox/skybox.vert", "../../Scenes/ChurchScene/Shaders/Skybox/skybox.frag"});
+    church_shader = ShaderMaterial({"../../Scenes/ChurchScene/Shaders/Model/model.vert", "../../Scenes/ChurchScene/Shaders/Model/model.frag"});
 
     DS::Vector<const char*> cubemap_faces = {
         "../../Assets/Textures/sky_skybox/right.jpg",
@@ -211,6 +219,8 @@ int main(int argc, char** argv) {
 
     skybox_geo = GFX::Geometry::Cube();
     sky_cubemap = Texture::LoadCubeMap(cubemap_faces);
+
+    church = GFX::Geometry::Model("../../Assets/Models/church.glb");
 
     float previous = 0;
     float timer = 2.0f;
