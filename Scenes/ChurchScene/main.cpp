@@ -3,6 +3,9 @@
 #define MASTER_PROFILE "master"
 #define MOVEMENT_PROFILE "movement"
 
+GFX::Geometry church;
+ShaderMaterial church_shader;
+
 GFX::Geometry skybox_geo;
 ShaderNoMaterial skybox_shader;
 Texture sky_cubemap;
@@ -194,7 +197,6 @@ int main(int argc, char** argv) {
     Input::GLFW_BIND_MOUSE_MOVE_CALLBACK(mouse);
     Input::CreateProfile(MASTER_PROFILE, cbMasterProfile);
     Input::CreateProfile(MOVEMENT_PROFILE, cbMovementProfile);
-    
     
     skybox_shader = ShaderNoMaterial({"../../Scenes/ChurchScene/Shaders/Skybox/skybox.vert", "../../Scenes/ChurchScene/Shaders/Skybox/skybox.frag"});
 
