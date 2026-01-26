@@ -43,7 +43,7 @@ struct Material {
     bool has_specular_map;
 
     sampler2D normal_map;
-    bool has_normals;
+    bool has_normal_map;
 
     sampler2D emissive_map;
     bool has_emissive_map;
@@ -52,18 +52,6 @@ struct Material {
     vec3 diffuse_color;
     vec3 specular_color;
 
-    float shininess;
-    float opacity;
-};
-
-struct Material {
-    sampler2D diffuse_map;
-    sampler2D specular_map;
-
-    vec3 ambient_color;
-    vec3 diffuse_color;
-    vec3 specular_color;
-    
     float shininess;
     float opacity;
 };
@@ -164,7 +152,7 @@ void main() {
     vec3 diffuse_texel = texture(uMaterial.diffuse_map, v_TexCoord).rgb;
     vec3 specular_texel = texture(uMaterial.specular_map, v_TexCoord).rgb;
     
-    vec3 final_rgb += CalcDirectionalLight(uDirectionalLight, diffuse_texel, specular_texel, N, V);
+    vec3 final_rgb = CalcDirectionalLight(uDirectionalLight, diffuse_texel, specular_texel, N, V);
     for(int i = 0; i < NR_POINT_LIGHTS; i++) {
         final_rgb += CalcPointLight(uPointLights[i], diffuse_texel, specular_texel, N, V);         
     }
@@ -178,6 +166,6 @@ void main() {
         final_rgb += emissive;
     }
     
-    FragColor = vec4(total_light_result, uMaterial.opacity);
-    // FragColor = vec4(v_Normal, 1.0);
+    FragColor = vec4(final_rgb, uMaterial.opacity);
+    FragColor = vec4(v_Normal, 1.0);
 }

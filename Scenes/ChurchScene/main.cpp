@@ -38,6 +38,7 @@ void cbMasterProfile() {
 
     if (Input::GetKeyPressed(Input::KEY_R)) {
         skybox_shader.compile();
+        church_shader.compile();
     }
 
     if (Input::GetKeyPressed(Input::KEY_0)) {
@@ -210,7 +211,7 @@ int main(int argc, char** argv) {
     Input::CreateProfile(MOVEMENT_PROFILE, cbMovementProfile);
     
     skybox_shader = ShaderNoMaterial({"../../Scenes/ChurchScene/Shaders/Skybox/skybox.vert", "../../Scenes/ChurchScene/Shaders/Skybox/skybox.frag"});
-    church_shader = ShaderMaterial({"../../Scenes/ChurchScene/Shaders/Model/model.vert", "../../Scenes/ChurchScene/Shaders/Model/model.frag"});
+    church_shader = ShaderMaterial({"../../SFE/GFX/Shader/Material/material.vert", "../../SFE/GFX/Shader/Material/material.frag"});
 
     DS::Vector<const char*> cubemap_faces = {
         "../../Assets/Textures/sky_skybox/right.jpg",
