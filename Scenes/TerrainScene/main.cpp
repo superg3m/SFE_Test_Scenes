@@ -323,20 +323,24 @@ int main(int argc, char** argv) {
 
     init_geometry();
 
-    float previous = 0;
-    float timer = 2;
+    int frame_count = 0;
+    float fps_timer = 2;
+
+    float previous = glfwGetTime();
 	while (!glfwWindowShouldClose(window)) {
         float current = glfwGetTime();
         dt = current - previous;
         previous = current;
 
         accumulator += dt;
+        frame_count += 1;
+        fps_timer += dt;
 
-        if (timer == 0) {
-            timer = 2;
-            LOG_DEBUG("FPS: %d\n", (int)(1.0f / dt));
-        } else {
-            timer = Math::MoveToward(timer, 0, dt);
+        if (fps_timer >= 2.0f) {
+            float fps = (float)frame_count / fps_timer;
+            LOG_DEBUG("FPS: %.1f\n", fps);
+            fps_timer = 0.0f;
+            frame_count = 0;
         }
 
         Input::Poll();

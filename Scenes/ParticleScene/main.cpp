@@ -329,7 +329,8 @@ int main(int argc, char** argv) {
         g_threads.threads[i] = std::thread(update_worker, i);
     }
 
-    float timer = 2;
+    float fpsTimer = 0.0f;
+    int frameCount = 0;
     float previous = glfwGetTime();
 	while (!glfwWindowShouldClose(g_window)) {
         float current = glfwGetTime();
@@ -338,11 +339,14 @@ int main(int argc, char** argv) {
         previous = current;
 
         accumulator += dt;
-        if (timer == 0) {
-            timer = 2;
-            LOG_DEBUG("FPS: %d\n", (int)(1.0f / dt_for_fps));
-        } else {
-            timer = Math::MoveToward(timer, 0, dt_for_fps);
+        frameCount += 1;
+        fpsTimer += dt_for_fps;
+
+        if (fpsTimer >= 2.0f) {
+            float fps = (float)frameCount / fpsTimer;
+            LOG_DEBUG("FPS: %.1f\n", fps);
+            fpsTimer = 0.0f;
+            frameCount = 0;
         }
         
         Input::Poll();
