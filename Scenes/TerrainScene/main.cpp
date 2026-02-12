@@ -190,8 +190,6 @@ void display() {
     Math::Mat4 perspective = GFX::GetProjectionMatrix3D(WIDTH, HEIGHT, camera.zoom);
     Math::Mat4 view = camera.getViewMatrix();
 
-    view.transpose().print();
-
     cloud_shader.setProjection(perspective);
     terrain_shader.setProjection(perspective);
     uniform_shader.setProjection(perspective);

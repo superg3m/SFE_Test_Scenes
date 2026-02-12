@@ -329,8 +329,8 @@ int main(int argc, char** argv) {
         g_threads.threads[i] = std::thread(update_worker, i);
     }
 
-    float previous = 0;
     float timer = 2;
+    float previous = glfwGetTime();
 	while (!glfwWindowShouldClose(g_window)) {
         float current = glfwGetTime();
         float dt_for_fps = (current - previous);
