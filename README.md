@@ -6,7 +6,6 @@
 
 
 # Building and Run (Builds for windows, macos. Trivial to make it build for linux)
-- **Bootstrap:** `./c_build/bootstrap.ps1`
 - **c_build.ps1 (Release):** `./c_build.ps1 -BuildType release -Clean -Build -Run`
 - **c_build.ps1 (Debug):** `./c_build.ps1 -BuildType debug -Clean -Build -Run` or `./c_build.ps1 -Debugger`
 
