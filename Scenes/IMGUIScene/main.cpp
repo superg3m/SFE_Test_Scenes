@@ -3,27 +3,109 @@
 #define MASTER_PROFILE "master"
 #define MOVEMENT_PROFILE "movement"
 
+void error_callback(int error, const char *msg) {
+    std::string s;
+    s = " [" + std::to_string(error) + "] " + msg + '\n';
+    LOG_ERROR("%s\n", s.c_str());
+}
+
+GLFWwindow* GLFW_INIT(float WIDTH, float HEIGHT) {
+    RUNTIME_ASSERT_MSG(glfwInit(), "Failed to init glfw\n");
+    glfwSetErrorCallback(error_callback);
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
+    #ifdef __APPLE__
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    #endif
+
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
+    if (window == nullptr) {
+        LOG_ERROR("Failed to create GLFW window\n");
+        glfwTerminate();
+        exit(-1);
+    }
+
+    glfwMakeContextCurrent(window);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        LOG_ERROR("Failed to initialize GLAD\n");
+        glfwTerminate();
+        exit(-1);
+    }
+
+    return window;
+}
+
+bool IMGUI_INIT(GLFWwindow* window) {
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    bool success = ImGui_ImplGlfw_InitForOpenGL(window, true);
+    if (!success) {
+        LOG_ERROR("[IMGUI ERROR]: ImGui_ImplGlfw_InitForOpenGL() Failed\n");
+    }
+
+    success = ImGui_ImplOpenGL3_Init("#version 330");
+    if (!success) {
+        LOG_ERROR("[IMGUI ERROR]: ImGui_ImplOpenGL3_Init(#version 330) Failed\n");
+    }
+
+    return success;
+}
+
 struct ApplicationState {
+    Random::Seed seed = Random::GenerateSeed(451);
+    Memory::GeneralAllocator allocator = Memory::GeneralAllocator();
+    GLFWwindow* window;
+
+    ShaderMaterial model_shader;
+
+    bool mouse_captured = true;
+    bool show_editor = true;
+
+    int frame_count = 0;
+    int rolling_fps = 0;
+
     float dt = 0;
     float accumulator = 0;
     float WIDTH = 900;
     float HEIGHT = 900;
 
-    bool show_editor = true;
-
-    int frame_count = 0;
-    int rolling_fps = 0;
-    bool mouse_captured = true;
     float bg_color[4] = {0.25f, 0.25f, 0.25f, 1.0f};
-
     Camera camera = Camera(0, 1, 10);
 
-    Texture fire_texture;
+    DS::Vector<GFX::Geometry> models;
+
+    ApplicationState() {
+        Memory::bindAllocator(&this->allocator);
+        this->window = GLFW_INIT(this->WIDTH, this->HEIGHT);
+
+        this->models = DS::Vector<GFX::Geometry>(8);
+        this->model_shader = ShaderMaterial({"../../SFE/GFX/Shader/Material/material.vert", "../../SFE/GFX/Shader/Material/material.frag"});
+
+        glfwSetInputMode(window, GLFW_CURSOR, this->mouse_captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+
+        glfwSwapInterval(1); // vsync
+        glEnable(GL_MULTISAMPLE);
+        GFX::SetDepthTest(true);
+        GFX::SetStencilTest(true);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        // glEnable(GL_FRAMEBUFFER_SRGB);
+    }
 };
 
 struct EditorState {
     ImGuizmo::OPERATION gizmo_operation = ImGuizmo::TRANSLATE;
+    DS::Vector<Texture> textures;
     bool show_demo_window = false;
+
+    EditorState() {
+        this->textures = DS::Vector<Texture>(8);
+    }
 };
 
 ApplicationState app;
@@ -37,7 +119,9 @@ void cbMasterProfile() {
         glfwSetWindowShouldClose(window, true);
     }
 
-    if (Input::GetKeyPressed(Input::KEY_R)) {}
+    if (Input::GetKeyPressed(Input::KEY_R)) {
+        app.model_shader.compile();
+    }
 
     if (Input::GetKeyPressed(Input::KEY_PERIOD)) {
         app.show_editor = !app.show_editor;
@@ -112,6 +196,13 @@ void render_scene() {
     Math::Mat4 model = Math::Mat4::Identity();
     Math::Mat4 perspective = GFX::GetProjectionMatrix3D(app.WIDTH, app.HEIGHT, app.camera.zoom);
     Math::Mat4 view = app.camera.getViewMatrix();
+
+   app.model_shader.setModel(model);
+   app.model_shader.setProjection(perspective);
+   app.model_shader.setView(view);
+    for (auto& geo : app.models) {
+        GFX::DrawGeometry(geo, &app.model_shader);
+    }
 }
 
 void render_gui() {
@@ -145,16 +236,36 @@ void render_gui() {
                 }
 
                 if (ImGui::BeginTabItem("Model Loader")) {
+                    if (ImGui::Button("Load Model")) {
+                        nfdchar_t* outPath = NULL;
+                        nfdresult_t result = NFD_OpenDialog("ply,glb;obj", NULL, &outPath);
+                        if (result == NFD_OKAY) {
+                            app.models.push(GFX::Geometry::Model(outPath));
+                        } else if (result == NFD_CANCEL){
+                            printf("User pressed cancel.");
+                        } else {
+                            printf("Error: %s\n", NFD_GetError());
+                        }
+                    }
+
                     ImGui::EndTabItem();
                 }
 
                 if (ImGui::BeginTabItem("Texture Viewer")) {
                     if (ImGui::Button("Load Texture")) {
-                        // Use NFD
+                        nfdchar_t* outPath = NULL;
+                        nfdresult_t result = NFD_OpenDialog("png,jpg;pdf", NULL, &outPath);
+                        if (result == NFD_OKAY) {
+                            editor.textures.push(Texture::LoadFromFile(outPath));
+                        } else if (result == NFD_CANCEL){
+                            puts("User pressed cancel.");
+                        } else {
+                            printf("Error: %s\n", NFD_GetError());
+                        }
                     }
 
-                    for (int i = 0; i < 2; i++) {
-                        ImGui::Image((ImTextureID)0, ImVec2(64, 64));
+                    for (int i = 0; i < editor.textures.count(); i++) {
+                        ImGui::Image(editor.textures[i].id, ImVec2(64, 64));
                         ImGui::SameLine();
                     }
 
@@ -207,69 +318,6 @@ void render() {
     }
 }
 
-void error_callback(int error, const char *msg) {
-    std::string s;
-    s = " [" + std::to_string(error) + "] " + msg + '\n';
-    LOG_ERROR("%s\n", s.c_str());
-}
-
-GLFWwindow* GLFW_INIT() {
-    RUNTIME_ASSERT_MSG(glfwInit(), "Failed to init glfw\n");
-    glfwSetErrorCallback(error_callback);
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_SAMPLES, 4);
-
-    #ifdef __APPLE__
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    #endif
-
-    GLFWwindow* window = glfwCreateWindow(app.WIDTH, app.HEIGHT, "LearnOpenGL", nullptr, nullptr);
-    if (window == nullptr) {
-        LOG_ERROR("Failed to create GLFW window\n");
-        glfwTerminate();
-        exit(-1);
-    }
-
-    glfwMakeContextCurrent(window);
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        LOG_ERROR("Failed to initialize GLAD\n");
-        glfwTerminate();
-        exit(-1);
-    }
-
-    glfwSwapInterval(1); // vsync
-    glfwSetInputMode(window, GLFW_CURSOR, app.mouse_captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
-
-    glEnable(GL_MULTISAMPLE);
-    GFX::SetDepthTest(true);
-    GFX::SetStencilTest(true);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // glEnable(GL_FRAMEBUFFER_SRGB);
-
-    return window;
-}
-
-bool IMGUI_INIT(GLFWwindow* window) {
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    bool success = ImGui_ImplGlfw_InitForOpenGL(window, true);
-    if (!success) {
-        LOG_ERROR("[IMGUI ERROR]: ImGui_ImplGlfw_InitForOpenGL() Failed\n");
-    }
-
-    success = ImGui_ImplOpenGL3_Init("#version 330");
-    if (!success) {
-        LOG_ERROR("[IMGUI ERROR]: ImGui_ImplOpenGL3_Init(#version 330) Failed\n");
-    }
-
-    return success;
-}
-
 void BEGIN_FRAME() {
     static float previous = 0;
     float current = glfwGetTime();
@@ -289,23 +337,17 @@ void BEGIN_FRAME() {
     }
 }
 
-void END_FRAME(GLFWwindow* window) {
+void END_FRAME() {
     glfwPollEvents();
-    glfwSwapBuffers(window);
+    glfwSwapBuffers(app.window);
 
     app.frame_count += 1;
     GFX::ClearTelemetry();
 }
 
 int main(int argc, char** argv) {
-    Random::Seed seed = Random::GenerateSeed(451);
-    Memory::GeneralAllocator allocator = Memory::GeneralAllocator();
-    Memory::bindAllocator(&allocator);
-
-    GLFWwindow* window = GLFW_INIT();
-
     Input::Init();
-    if (!Input::GLFW_SETUP(window)) {
+    if (!Input::GLFW_SETUP(app.window)) {
         LOG_ERROR("Failed to setup GLFW\n");
         glfwTerminate();
         exit(-1);
@@ -314,20 +356,18 @@ int main(int argc, char** argv) {
     Input::CreateProfile(MASTER_PROFILE, cbMasterProfile);
     Input::CreateProfile(MOVEMENT_PROFILE, cbMovementProfile);
 
-    if (!IMGUI_INIT(window)) {
+    if (!IMGUI_INIT(app.window)) {
         return -1;
     }
 
-    app.fire_texture = Texture::LoadFromFile("../../Assets/Textures/fire.jpg");
-
-	while (!glfwWindowShouldClose(window)) {
+	while (!glfwWindowShouldClose(app.window)) {
         BEGIN_FRAME();
 
         Input::Poll();
         update();
 		render();
 
-        END_FRAME(window);
+        END_FRAME();
 	}
 
 	return 0;

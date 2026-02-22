@@ -83,6 +83,7 @@ elif IS_DARWIN():
     libs += [
         f"../../SFE/Vendor/glfw/bin/macos/lib-arm64/libglfw3.a",
         f"../../SFE/Vendor/assimp/bin/macos/libassimp.dylib",
+        f"../../SFE/Vendor/nativefiledialog/bin/macos/libnfd.a",
         "-framework OpenGL",
         "-framework Cocoa",
         "-framework IOKit",
@@ -99,6 +100,7 @@ include_paths =  [
     "../../SFE/Vendor/glad/include",
     "../../SFE/Vendor/glfw", 
     "../../SFE/Vendor/imgui",
+    "../../SFE/Vendor/nativefiledialog/src/include",
     "../../SFE/Vendor/stb",
 ]
 
