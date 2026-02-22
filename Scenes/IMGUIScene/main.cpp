@@ -17,6 +17,8 @@ struct ApplicationState {
     float bg_color[4] = {0.25f, 0.25f, 0.25f, 1.0f};
 
     Camera camera = Camera(0, 1, 10);
+
+    Texture fire_texture;
 };
 
 struct EditorState {
@@ -117,26 +119,50 @@ void render_gui() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
-            ImGui::Begin("Inspector");
-                ImGui::Text("%d", app.rolling_fps);
+            if (ImGui::BeginTabBar("Editor")) {
+                if (ImGui::BeginTabItem("Telemetry")) {
+                    ImGui::Text("FPS: %d", app.rolling_fps);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Demo Window", &editor.show_demo_window);
 
-                if (ImGui::RadioButton("Translate", editor.gizmo_operation == ImGuizmo::TRANSLATE)) {
-                    editor.gizmo_operation = ImGuizmo::TRANSLATE;
-                }
-                
-                ImGui::SameLine();
-                if (ImGui::RadioButton("Rotate", editor.gizmo_operation == ImGuizmo::ROTATE)) {
-                    editor.gizmo_operation = ImGuizmo::ROTATE;
+                    if (ImGui::RadioButton("Translate", editor.gizmo_operation == ImGuizmo::TRANSLATE)) {
+                        editor.gizmo_operation = ImGuizmo::TRANSLATE;
+                    }
+                    
+                    ImGui::SameLine();
+                    if (ImGui::RadioButton("Rotate", editor.gizmo_operation == ImGuizmo::ROTATE)) {
+                        editor.gizmo_operation = ImGuizmo::ROTATE;
+                    }
+
+                    ImGui::SameLine();
+                    if (ImGui::RadioButton("Scale", editor.gizmo_operation == ImGuizmo::SCALE)) {
+                        editor.gizmo_operation = ImGuizmo::SCALE;
+                    }
+
+                    ImGui::ColorEdit4("Background Color", app.bg_color);
+
+                    ImGui::EndTabItem();
                 }
 
-                ImGui::SameLine();
-                if (ImGui::RadioButton("Scale", editor.gizmo_operation == ImGuizmo::SCALE)) {
-                    editor.gizmo_operation = ImGuizmo::SCALE;
+                if (ImGui::BeginTabItem("Model Loader")) {
+                    ImGui::EndTabItem();
                 }
 
-                ImGui::Checkbox("Demo Window", &editor.show_demo_window);
-                ImGui::ColorEdit4("Background Color", app.bg_color);
-            ImGui::End();
+                if (ImGui::BeginTabItem("Texture Viewer")) {
+                    if (ImGui::Button("Load Texture")) {
+                        // Use NFD
+                    }
+
+                    for (int i = 0; i < 2; i++) {
+                        ImGui::Image((ImTextureID)0, ImVec2(64, 64));
+                        ImGui::SameLine();
+                    }
+
+                    ImGui::EndTabItem();
+                }
+
+                ImGui::EndTabBar();
+            }
 
             ImGuiWindowFlags flags = (
                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | 
@@ -215,7 +241,6 @@ GLFWwindow* GLFW_INIT() {
         exit(-1);
     }
 
-
     glfwSwapInterval(1); // vsync
     glfwSetInputMode(window, GLFW_CURSOR, app.mouse_captured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
@@ -292,6 +317,8 @@ int main(int argc, char** argv) {
     if (!IMGUI_INIT(window)) {
         return -1;
     }
+
+    app.fire_texture = Texture::LoadFromFile("../../Assets/Textures/fire.jpg");
 
 	while (!glfwWindowShouldClose(window)) {
         BEGIN_FRAME();
