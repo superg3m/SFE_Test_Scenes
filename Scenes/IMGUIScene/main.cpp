@@ -113,7 +113,7 @@ EditorState editor;
 
 void cbMasterProfile() {
     GLFWwindow* window = (GLFWwindow*)Input::glfw_window_instance;
-    const bool SHIFT = Input::GetKey(Input::KEY_SHIFT, Input::PRESSED|Input::DOWN);
+    // const bool SHIFT = Input::GetKey(Input::KEY_SHIFT, Input::PRESSED|Input::DOWN);
 
     if (Input::GetKeyPressed(Input::KEY_ESCAPE)) {
         glfwSetWindowShouldClose(window, true);
@@ -240,11 +240,12 @@ void render_gui() {
                         nfdchar_t* outPath = NULL;
                         nfdresult_t result = NFD_OpenDialog("ply,glb;obj", NULL, &outPath);
                         if (result == NFD_OKAY) {
+                            LOG_INFO("PATH: %s\n", outPath);
                             app.models.push(GFX::Geometry::Model(outPath));
                         } else if (result == NFD_CANCEL){
-                            printf("User pressed cancel.");
+                            LOG_INFO("User pressed cancel.");
                         } else {
-                            printf("Error: %s\n", NFD_GetError());
+                            LOG_INFO("Error: %s\n", NFD_GetError());
                         }
                     }
 
@@ -350,14 +351,15 @@ int main(int argc, char** argv) {
     if (!Input::GLFW_SETUP(app.window)) {
         LOG_ERROR("Failed to setup GLFW\n");
         glfwTerminate();
-        exit(-1);
+        
+        return 1;
     }
     Input::GLFW_BIND_MOUSE_MOVE_CALLBACK(mouse);
     Input::CreateProfile(MASTER_PROFILE, cbMasterProfile);
     Input::CreateProfile(MOVEMENT_PROFILE, cbMovementProfile);
 
     if (!IMGUI_INIT(app.window)) {
-        return -1;
+        return 1;
     }
 
 	while (!glfwWindowShouldClose(app.window)) {

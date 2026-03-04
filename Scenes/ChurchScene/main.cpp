@@ -30,7 +30,7 @@ ApplicationState app;
 
 void cbMasterProfile() {
     GLFWwindow* window = (GLFWwindow*)Input::glfw_window_instance;
-    const bool SHIFT = Input::GetKey(Input::KEY_SHIFT, Input::PRESSED|Input::DOWN);
+    // const bool SHIFT = Input::GetKey(Input::KEY_SHIFT, Input::PRESSED|Input::DOWN);
 
     if (Input::GetKeyPressed(Input::KEY_ESCAPE)) {
         glfwSetWindowShouldClose(window, true);

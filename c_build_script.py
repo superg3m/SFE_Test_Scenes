@@ -33,7 +33,7 @@ pc: ProjectConfig = ProjectConfig(
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():
-    cc.compiler_name = "cl"
+    cc.compiler_name = "gcc"
 elif IS_DARWIN() and not C_BUILD_IS_DEPENDENCY():
     cc.compiler_name = "clang"
 elif IS_LINUX() and not C_BUILD_IS_DEPENDENCY():
@@ -44,7 +44,7 @@ if cc.compiler_name == "cl":
     cc.compiler_disable_specific_warnings = [
         "4244", "4100", "4458", 
         "4201", "4116", "4702",
-        "4996"
+        "4996", "4245"
     ]
 else:
     cc.compiler_warning_level = ""
@@ -63,20 +63,24 @@ libs = [
 ]
 
 if IS_WINDOWS():
+    nfd_path = f"../../SFE/Vendor/nativefiledialog/bin/{cc.compiler_name}/{C_BUILD_BUILD_TYPE()}/nfd.lib"
     if cc.compiler_name == "cl":
-        glfw_path = "../../SFE/Vendor/glfw/bin/windows/lib-static-ucrt/glfw3dll.lib"  
+        glfw_path = "../../SFE/Vendor/glfw/bin/windows/lib-static-ucrt/glfw3dll.lib"
     else: 
         glfw_path = "../../SFE/Vendor/glfw/bin/windows/lib-mingw-w64/libglfw3dll.a"
         inject += ["-L/ucrt64/lib", "-lassimp"] #hacky but works for now
     
     libs += [
         glfw_path,
+        nfd_path,
         f"../../SFE/Vendor/assimp/bin/windows/assimp-vc143-mtd.lib",
         GET_LIB_FLAG(cc, "Kernel32"),
         GET_LIB_FLAG(cc, "User32"),
         GET_LIB_FLAG(cc, "Gdi32"),
         GET_LIB_FLAG(cc, "OpenGL32"), 
         GET_LIB_FLAG(cc, "Winmm"),
+        GET_LIB_FLAG(cc, "Ole32"),
+        GET_LIB_FLAG(cc, "uuid"),
     ]
 elif IS_DARWIN():
     inject += ["-Wl,-rpath,@executable_path"]
