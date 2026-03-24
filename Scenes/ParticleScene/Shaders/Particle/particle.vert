@@ -1,6 +1,7 @@
 #version 330 core
 
 layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aTexCoord;
 layout(location = 8) in vec3 aCenter;
 layout(location = 9) in vec3 aColor;
@@ -8,8 +9,11 @@ layout(location = 9) in vec3 aColor;
 uniform mat4 uView;
 uniform mat4 uProjection;
 
+
 out vec2 v_TexCoord;
 out vec3 v_Color;
+out vec3 v_FragPos;
+out vec3 v_Normal;
 
 void main() {
     vec2 billboard_size = vec2(1.5); 
@@ -22,6 +26,9 @@ void main() {
         (worldspace_camera_right_vector * aPos.x * billboard_size.x) + 
         (worldspace_camera_up_vector * aPos.y * billboard_size.y)
     );
+
+    v_Normal = aNormal;
+    v_FragPos = worldspace_cannoncial_vertex_position;
 
     v_Color = aColor;
     v_TexCoord = aTexCoord;

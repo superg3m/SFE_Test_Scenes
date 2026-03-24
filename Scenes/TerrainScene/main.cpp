@@ -215,7 +215,7 @@ void display() {
     terrain_shader.setTexture2D("uColorTexture", 0, diffuse);
     terrain_shader.setTexture2D("uHeightTexture", 1, height);
     terrain_shader.setVec3("uLightPosition", light_position);
-    terrain_shader.setVec3("uLightPosition", light_position);
+    terrain_shader.setVec3("uCameraPosition", camera.position);
     terrain_shader.setBool("uRenderShading", render_shading);
     terrain_shader.setBool("uRenderNormals", render_normals);
     GFX::DrawGeometry(terrain, &terrain_shader);

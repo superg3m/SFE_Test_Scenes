@@ -9,7 +9,7 @@ float dt = 0;
 float WIDTH = 900;
 float HEIGHT = 900;
 float accumulator = 0;
-Camera camera = Camera(0, 1, 20);
+Camera camera = Camera(0, 1, 50);
 ShaderNoMaterial particle_shader;
 GFX::Geometry particle;
 DS::Vector<Math::Vec3> particle_centers;
@@ -24,7 +24,7 @@ Texture galaxy_texture;
 GLFWwindow* g_window;
 bool toggle_gravity = true;
 float time_scale = 1.0f;
-float singularity_mass = 1000000.0f;
+float singularity_mass = 500000.0f;
 
 Math::Vec3 get_gravity_force(Math::Vec3 position_a, float mass_a, Math::Vec3 position_b, float mass_b) {
     if (!toggle_gravity) return Math::Vec3(0.0);
@@ -220,6 +220,9 @@ void render() {
     glClearColor(0.2f, 0.2f, 0.2f, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // glEnable(GL_BLEND);
+    // glDepthMask(false); 
+
     Math::Mat4 perspective = GFX::GetProjectionMatrix3D(WIDTH, HEIGHT, camera.zoom);
     Math::Mat4 view = camera.getViewMatrix();
 
@@ -230,7 +233,11 @@ void render() {
     particle_center_buffer.updateEntireBuffer(particle_centers);
     particle_color_buffer.updateEntireBuffer(particle_colors);
     particle_shader.setTexture2D("uTexture", 0, smoke_texture);
+    particle_shader.setVec3("uViewPosition", camera.position);
     GFX::DrawGeometryInstanced(particle, &particle_shader, particle_count);
+
+    // glDepthMask(true);
+    // glDisable(GL_BLEND);
 }
 
 GLFWwindow* GLFW_INIT() {
@@ -329,6 +336,9 @@ int main(int argc, char** argv) {
         g_threads.threads[i] = std::thread(update_worker, i);
     }
 
+    glEnable(GL_DEPTH_TEST);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     float fpsTimer = 0.0f;
     int frameCount = 0;
     float previous = glfwGetTime();
@@ -351,26 +361,27 @@ int main(int argc, char** argv) {
         
         Input::Poll();
         
-        const float PARTICLE_SPAWN_COUNT_PER_SECOND = 3000; // MAX_PARTICLES * 60;
+        const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES; // 3000;
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) { 
             Particle p; 
-            #if 1 
+            #if 0
                 float angle = 50.0f * accumulator + (i * 0.1f); 
                 float speed = 2.0f + sin(accumulator); 
-                float dx = speed * cos(angle); float dy = speed * sin(angle); 
+                float dx = speed * cos(angle); 
+                float dy = speed * sin(angle); 
                 float dz = speed * sin(angle + i); 
-            #elif 0 
+            #elif 0
                 float freqX = 3.0f; 
                 float freqY = 2.0f; 
                 float strength = 4.0f; 
                 float dx = strength * cos(freqX * accumulator + (i * 0.05f)); 
                 float dy = strength * sin(freqY * accumulator); float dz = 0; 
             #else 
-                float individualOffset = (float)next_available_particle_index * 0.001f; 
-                float dx = 3.0f * cos(5.0f * accumulator + individualOffset); 
-                float dy = 3.0f * sin(3.0f * accumulator + individualOffset); 
-                float dz = 2.0f * sin(10.0f * accumulator);
+                float individualOffset = (float)i; 
+                float dx = 12.0f * cos(5.0f * accumulator + i); 
+                float dy = 12.0f * sin(2.0f * accumulator + i); 
+                float dz = 12.0f * sin(4.0f * accumulator + i);
             #endif 
             
             p.position = Math::Vec3(0, 0, 0); 

@@ -17,8 +17,7 @@ uniform float uHeight;
 uniform int uHeightBoost;
 uniform sampler2D uHeightTexture;
 
-void main()
-{
+void main() {
     float X_STEP = 1.0 / uWidth;
     float Z_STEP = 1.0 / uHeight;
 

@@ -29,7 +29,7 @@ pc: ProjectConfig = ProjectConfig(
     ],
     project_debug_with_visual_studio = False,
     project_rebuild_project_dependencies = True,
-    project_executable_names = ["imgui_scene.exe"]
+    project_executable_names = ["terrain.exe", "particle.exe"]
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():
@@ -87,7 +87,6 @@ elif IS_DARWIN():
     libs += [
         f"../../SFE/Vendor/glfw/bin/macos/lib-arm64/libglfw3.a",
         f"../../SFE/Vendor/assimp/bin/macos/libassimp.dylib",
-        f"../../SFE/Vendor/nativefiledialog/bin/macos/libnfd.a",
         "-framework OpenGL",
         "-framework Cocoa",
         "-framework IOKit",
@@ -104,7 +103,6 @@ include_paths =  [
     "../../SFE/Vendor/glad/include",
     "../../SFE/Vendor/glfw", 
     "../../SFE/Vendor/imgui",
-    "../../SFE/Vendor/nativefiledialog/src/include",
     "../../SFE/Vendor/stb",
 ]
 
@@ -156,17 +154,6 @@ procedures_config = {
         include_paths = include_paths,
         compiler_inject_into_args=inject
     ),
-
-    "imgui scene": ProcedureConfig(
-        build_directory = f"./{build_postfix}",
-        output_name = f"imgui_scene.exe",
-        source_files = [
-            "../../Scenes/IMGUIScene/main.cpp",
-        ],
-        additional_libs = libs,
-        include_paths = include_paths,
-        compiler_inject_into_args=inject
-    )
 }
 
 manager: Manager = Manager(cc, pc, procedures_config)
