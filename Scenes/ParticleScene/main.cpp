@@ -11,7 +11,9 @@ float HEIGHT = 900;
 float accumulator = 0;
 Camera camera = Camera(0, 1, 50);
 ShaderNoMaterial particle_shader;
+ShaderNoMaterial singularity_shader;
 GFX::Geometry particle;
+GFX::Geometry singularity;
 DS::Vector<Math::Vec3> particle_centers;
 DS::Vector<Math::Vec3> particle_colors;
 GFX::VertexBuffer particle_center_buffer;
@@ -22,16 +24,28 @@ Texture fire_texture;
 Texture smoke_texture;
 Texture galaxy_texture;
 GLFWwindow* g_window;
-bool toggle_gravity = true;
 float time_scale = 1.0f;
-float singularity_mass = 500000.0f;
 
-Math::Vec3 get_gravity_force(Math::Vec3 position_a, float mass_a, Math::Vec3 position_b, float mass_b) {
-    if (!toggle_gravity) return Math::Vec3(0.0);
+struct SingularityState {
+    float mass;
+    Math::Vec3 position;
+    bool active;
+};
 
-    Math::Vec3 AB = (position_b - position_a).normalize();
-    float distance = Math::Vec3::Distance(position_a, position_b);
-    float force_magnitude = (float)(1 * ((mass_a * mass_b) / SQUARED(distance + 50)));
+int singularity_index = 0;
+SingularityState singularities[] = {
+    SingularityState{100000.0f, Math::Vec3(500, 250, 250), true},
+    SingularityState{600000.0f, Math::Vec3(0, 500, -250), true},
+    SingularityState{300000.0f, Math::Vec3(-500, 250, 250), true},
+};
+
+Math::Vec3 get_gravity_force(Math::Vec3 position_a, float mass_a, SingularityState s) {
+    if (!s.active) return Math::Vec3(0.0);
+
+    Math::Vec3 AB = (s.position - position_a).normalize();
+    float distance = Math::Vec3::Distance(position_a, s.position);
+    float force_magnitude = (float)(1 * ((mass_a * s.mass) / SQUARED(distance + 50)));
+    force_magnitude = CLAMP(force_magnitude, 0, 0.5);
     Math::Vec3 gravity_force = AB.scale(force_magnitude);
 
     return gravity_force;
@@ -65,10 +79,9 @@ struct Particle {
     float mass = 0.1f;
 };
 
-const int MAX_PARTICLES = 100000;
+const int MAX_PARTICLES = 25000;
 DS::Vector<Particle> particles;
 int particle_count = 0;
-
 
 void mouse(GLFWwindow* window, double mouse_x, double mouse_y) {
     static bool first = true;
@@ -102,21 +115,37 @@ void cbMasterProfile() {
 
     if (Input::GetKeyPressed(Input::KEY_R)) {
         particle_shader.compile();
+        particle_count = 0;
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_0)) {
+        singularity_index = 0;
+        LOG_TRACE("sigularity index: 0\n");
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_1)) {
+        singularity_index = 1;
+        LOG_TRACE("sigularity index: 1\n");
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_2)) {
+        singularity_index = 2;
+        LOG_TRACE("sigularity index: 2\n");
     }
 
     if (Input::GetKeyPressed(Input::KEY_G)) {
-        toggle_gravity = !toggle_gravity;
-        LOG_TRACE("gravity: %s\n", toggle_gravity ? "ON" : "OFF");
+        singularities[singularity_index].active = !singularities[singularity_index].active;
+        LOG_TRACE("gravity[%d]: %s\n", singularity_index, singularities[singularity_index].active ? "ON" : "OFF");
     }
 
     if (Input::GetKeyDown(Input::KEY_LEFT)) {
-        singularity_mass -= 10000.0f;
-        LOG_TRACE("mass: %f\n", singularity_mass);
+        singularities[singularity_index].mass -= 10000.0f;
+        LOG_TRACE("mass[%d]: %f\n", singularity_index, singularities[singularity_index].mass);
     }
     
     if (Input::GetKeyDown(Input::KEY_RIGHT)) {
-        singularity_mass += 10000.0f;
-        LOG_TRACE("mass: %f\n", singularity_mass);
+        singularities[singularity_index].mass += 10000.0f;
+        LOG_TRACE("mass[%d]: %f\n", singularity_index, singularities[singularity_index].mass);
     }
 
     if (Input::GetKeyPressed(Input::KEY_UP)) {
@@ -183,17 +212,21 @@ void update_worker(int index) {
             });
         }
 
-        Math::Vec3 singularity_position = Math::Vec3(250, 250, 250);
-        for (int i = pr.start_index; i < pr.start_index + pr.length; i++) {
-            Particle* p = &particles[i];
-            p->acceleration = p->force.scale(1.0f / p->mass);
-            p->velocity += p->acceleration.scale(dt);
-            p->position += p->velocity.scale(dt);
-            p->velocity = p->velocity.scale(0.9998f);
-            p->force = get_gravity_force(p->position, p->mass, singularity_position, singularity_mass);
-            
-            particle_centers[i] = p->position;
-            particle_colors[i] = p->velocity.scale(1.0f / 6.0f);
+
+
+        for (int k = 0; k < ArrayCount(singularities); k++) {
+            const SingularityState s = singularities[k];
+            for (int i = pr.start_index; i < pr.start_index + pr.length; i++) {
+                Particle* p = &particles[i];
+                p->acceleration = p->force.scale(1.0f / p->mass);
+                p->velocity += p->acceleration.scale(dt);
+                p->position += p->velocity.scale(dt);
+                p->velocity = p->velocity.scale(0.9998f);
+                p->force = get_gravity_force(p->position, p->mass, s);
+                
+                particle_centers[i] = p->position;
+                particle_colors[i] = p->velocity.scale(1.0f / 6.0f);
+            }
         }
 
         if (++g_threads.completed >= THREAD_COUNT) {
@@ -229,6 +262,9 @@ void render() {
     particle_shader.setView(view);
     particle_shader.setProjection(perspective);
 
+    singularity_shader.setView(view);
+    singularity_shader.setProjection(perspective);
+
     particle.VAO.bind();
     particle_center_buffer.updateEntireBuffer(particle_centers);
     particle_color_buffer.updateEntireBuffer(particle_colors);
@@ -238,6 +274,28 @@ void render() {
 
     // glDepthMask(true);
     // glDisable(GL_BLEND);
+
+    for (int i = 0; i < ArrayCount(singularities); i++) {
+        const SingularityState s = singularities[i];
+        Math::Mat4 model = Math::Mat4::Identity();
+        model = Math::Mat4::Scale(model, s.mass / 100000.0f);
+        model = Math::Mat4::Translate(model, s.position);
+        
+        singularity_shader.setMat4("uModel", model);
+
+        if (i == singularity_index) {
+            singularity_shader.setVec3("uColor", Math::Vec3(1, 0, 0));
+        } else {
+            singularity_shader.setVec3("uColor", Math::Vec3(1, 1, 1));
+        }
+
+        if (!s.active) {
+            singularity_shader.setVec3("uColor", Math::Vec3(0, 0, 0));
+        }
+        
+        GFX::DrawGeometry(singularity, &singularity_shader);
+    }
+    
 }
 
 GLFWwindow* GLFW_INIT() {
@@ -302,6 +360,9 @@ int main(int argc, char** argv) {
     #define MOVEMENT_PROFILE "movement"
     Input::CreateProfile(MASTER_PROFILE, cbMasterProfile);
     Input::CreateProfile(MOVEMENT_PROFILE, cbMovementProfile);
+
+    singularity = GFX::Geometry::Cube();
+    singularity_shader = ShaderNoMaterial({"../../Scenes/ParticleScene/Shaders/singularity.vert", "../../Scenes/ParticleScene/Shaders/singularity.frag"});
 
     particle = GFX::Geometry::Quad();
     particle_shader = ShaderNoMaterial({"../../Scenes/ParticleScene/Shaders/Particle/particle.vert", "../../Scenes/ParticleScene/Shaders/Particle/particle.frag"});
