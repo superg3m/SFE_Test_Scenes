@@ -19,9 +19,10 @@ void main() {
     vec3 normal = normalize(v_Normal);
 
     vec3 texel = texture(uTexture, v_TexCoord).rgb;
-    float alpha = 1 - distance(v_TexCoord, vec2(0.5));
-    alpha = smoothstep(0.5, 0.8, alpha);
+    // float alpha = 1 - distance(v_TexCoord, vec2(0.5));
+    // alpha = smoothstep(0.5, 0.8, alpha);
+    // float f_mask = 1.0 - fresnel(3.0, normal, view_direction);
+    //FragColor = vec4(texel * v_Color + f_mask, alpha);
     
-    float f_mask = 1.0 - fresnel(3.0, normal, view_direction);
-    FragColor = vec4(texel * v_Color + f_mask, alpha);
+    FragColor = vec4(texel * v_Color, 1.0);
 }

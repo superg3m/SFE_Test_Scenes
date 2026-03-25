@@ -26,21 +26,55 @@ Texture galaxy_texture;
 GLFWwindow* g_window;
 float time_scale = 1.0f;
 
+struct ParticleRange {
+    int start_index;
+    int length;
+};
+
+struct Particle {
+    Math::Vec3 scale;
+    Math::Vec3 position;
+    Math::Vec3 velocity;
+    Math::Vec3 acceleration;
+    Math::Vec3 force;
+    float mass = 0.1f;
+};
+
+// MUST BE A POWER OF TWO
+#define THREAD_COUNT 1
+
+// MUST BE DIVISIBLE BY THE THREAD COUNT
+const int MAX_PARTICLES = 100000;
+DS::Vector<Particle> particles;
+int particle_count = 0;
+const float MASS_FACTOR = 250.0f;
+int singularity_index = 0;
+float FURTHER = 200;
+
+const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES * 60.0f; // * 0.20f; // 3000;
+
+struct ThreadSystem {
+    std::mutex mtx;
+    std::condition_variable cv_start;
+    std::condition_variable cv_done;
+    std::atomic<int> completed{0};
+    std::thread threads[THREAD_COUNT];
+    ParticleRange ranges[THREAD_COUNT];
+};
+
+ThreadSystem g_threads;
+
 struct SingularityState {
     float mass;
     Math::Vec3 position;
     bool active;
 };
 
-const float MASS_FACTOR = 500.0f;
-
-int singularity_index = 0;
-float FURTHER = 200;
 SingularityState singularities[] = {
     SingularityState{MASS_FACTOR * 100, Math::Vec3(FURTHER, 0, 0), true},
-    SingularityState{MASS_FACTOR * 100, Math::Vec3(0, FURTHER * 1.75f, 0), true},
-    SingularityState{MASS_FACTOR * 100, Math::Vec3(0, 0, FURTHER), true},
-    SingularityState{MASS_FACTOR * 120, Math::Vec3(0, FURTHER, -FURTHER), true},
+    SingularityState{MASS_FACTOR * 105, Math::Vec3(0, FURTHER * 1.75f, 0), true},
+    SingularityState{MASS_FACTOR * 120, Math::Vec3(0, 0, FURTHER), true},
+    SingularityState{MASS_FACTOR * 110, Math::Vec3(0, FURTHER, -FURTHER), true},
 };
 
 Math::Vec3 get_gravity_force(Math::Vec3 position_a, float mass_a, SingularityState s) {
@@ -54,38 +88,6 @@ Math::Vec3 get_gravity_force(Math::Vec3 position_a, float mass_a, SingularitySta
     return gravity_force;
 }
 
-
-struct ParticleRange {
-    int start_index;
-    int length;
-};
-
-#define THREAD_COUNT 1
-
-struct ThreadSystem {
-    std::mutex mtx;
-    std::condition_variable cv_start;
-    std::condition_variable cv_done;
-    std::atomic<int> completed{0};
-    std::thread threads[THREAD_COUNT];
-    ParticleRange ranges[THREAD_COUNT];
-};
-
-ThreadSystem g_threads;
-
-struct Particle {
-    Math::Vec3 scale;
-    Math::Vec3 position;
-    Math::Vec3 velocity;
-    Math::Vec3 acceleration;
-    Math::Vec3 force;
-    float mass = 0.1f;
-};
-
-// MUST BE DIVISIBLE BY THE THREAD COUNT
-const int MAX_PARTICLES = 120000;
-DS::Vector<Particle> particles;
-int particle_count = 0;
 
 void mouse(GLFWwindow* window, double mouse_x, double mouse_y) {
     static bool first = true;
@@ -228,11 +230,11 @@ void update_worker(int index) {
                 p->acceleration = p->force.scale(1.0f / p->mass);
                 p->velocity += p->acceleration.scale(dt);
                 p->position += p->velocity.scale(dt);
-                p->velocity = p->velocity.scale(0.9998f);
+                p->velocity = p->velocity.scale(0.9999f);
                 p->force = get_gravity_force(p->position, p->mass, s);
         
                 particle_centers[i] = p->position;
-                particle_colors[i] = p->velocity.scale(1.0f / 6.0f);
+                particle_colors[i] = p->velocity.scale(1.0f / 5.5f);
             }
         }
 
@@ -427,18 +429,17 @@ int main(int argc, char** argv) {
         }
         
         Input::Poll();
-        
-        const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES * 2; // * 0.20f; // 3000;
+    
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) { 
             Particle p; 
-            #if 1
+            #if 0
                 float angle = 50.0f * accumulator + (i * 0.1f); 
                 float speed = 2.0f + sin(accumulator); 
                 float dx = speed * cos(angle); 
                 float dy = speed * sin(angle); 
                 float dz = speed * sin(angle + i); 
-            #elif 0
+            #elif 1
                 float freqX = 3.0f; 
                 float freqY = 2.0f; 
                 float strength = 4.0f; 
