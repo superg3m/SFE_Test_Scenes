@@ -60,7 +60,7 @@ struct ParticleRange {
     int length;
 };
 
-#define THREAD_COUNT 4
+#define THREAD_COUNT 1
 
 struct ThreadSystem {
     std::mutex mtx;
@@ -83,7 +83,7 @@ struct Particle {
 };
 
 // MUST BE DIVISIBLE BY THE THREAD COUNT
-const int MAX_PARTICLES = 80000;
+const int MAX_PARTICLES = 120000;
 DS::Vector<Particle> particles;
 int particle_count = 0;
 
