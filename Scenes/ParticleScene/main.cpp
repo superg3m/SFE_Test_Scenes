@@ -32,20 +32,23 @@ struct SingularityState {
     bool active;
 };
 
+const float MASS_FACTOR = 500.0f;
+
 int singularity_index = 0;
+float FURTHER = 200;
 SingularityState singularities[] = {
-    SingularityState{100000.0f, Math::Vec3(500, 250, 250), true},
-    SingularityState{600000.0f, Math::Vec3(0, 500, -250), true},
-    SingularityState{300000.0f, Math::Vec3(-500, 250, 250), true},
+    SingularityState{MASS_FACTOR * 100, Math::Vec3(FURTHER, 0, 0), true},
+    SingularityState{MASS_FACTOR * 100, Math::Vec3(0, FURTHER * 1.75f, 0), true},
+    SingularityState{MASS_FACTOR * 100, Math::Vec3(0, 0, FURTHER), true},
+    SingularityState{MASS_FACTOR * 120, Math::Vec3(0, FURTHER, -FURTHER), true},
 };
 
 Math::Vec3 get_gravity_force(Math::Vec3 position_a, float mass_a, SingularityState s) {
     if (!s.active) return Math::Vec3(0.0);
 
     Math::Vec3 AB = (s.position - position_a).normalize();
-    float distance = Math::Vec3::Distance(position_a, s.position);
-    float force_magnitude = (float)(1 * ((mass_a * s.mass) / SQUARED(distance + 50)));
-    force_magnitude = CLAMP(force_magnitude, 0, 0.5);
+    float distance = CLAMP(Math::Vec3::Distance(position_a, s.position), 80, 240);
+    float force_magnitude = (float)(1 * ((mass_a * s.mass) / SQUARED(distance)));
     Math::Vec3 gravity_force = AB.scale(force_magnitude);
 
     return gravity_force;
@@ -57,7 +60,7 @@ struct ParticleRange {
     int length;
 };
 
-#define THREAD_COUNT 1
+#define THREAD_COUNT 4
 
 struct ThreadSystem {
     std::mutex mtx;
@@ -79,7 +82,8 @@ struct Particle {
     float mass = 0.1f;
 };
 
-const int MAX_PARTICLES = 25000;
+// MUST BE DIVISIBLE BY THE THREAD COUNT
+const int MAX_PARTICLES = 80000;
 DS::Vector<Particle> particles;
 int particle_count = 0;
 
@@ -118,19 +122,24 @@ void cbMasterProfile() {
         particle_count = 0;
     }
 
-    if (Input::GetKeyPressed(Input::KEY_0)) {
+    if (Input::GetKeyPressed(Input::KEY_1)) {
         singularity_index = 0;
         LOG_TRACE("sigularity index: 0\n");
     }
 
-    if (Input::GetKeyPressed(Input::KEY_1)) {
+    if (Input::GetKeyPressed(Input::KEY_2)) {
         singularity_index = 1;
         LOG_TRACE("sigularity index: 1\n");
     }
 
-    if (Input::GetKeyPressed(Input::KEY_2)) {
+    if (Input::GetKeyPressed(Input::KEY_3)) {
         singularity_index = 2;
         LOG_TRACE("sigularity index: 2\n");
+    }
+
+    if (Input::GetKeyPressed(Input::KEY_4)) {
+        singularity_index = 3;
+        LOG_TRACE("sigularity index: 3\n");
     }
 
     if (Input::GetKeyPressed(Input::KEY_G)) {
@@ -139,12 +148,12 @@ void cbMasterProfile() {
     }
 
     if (Input::GetKeyDown(Input::KEY_LEFT)) {
-        singularities[singularity_index].mass -= 10000.0f;
+        singularities[singularity_index].mass -= MASS_FACTOR * 5;
         LOG_TRACE("mass[%d]: %f\n", singularity_index, singularities[singularity_index].mass);
     }
     
     if (Input::GetKeyDown(Input::KEY_RIGHT)) {
-        singularities[singularity_index].mass += 10000.0f;
+        singularities[singularity_index].mass += MASS_FACTOR * 5;
         LOG_TRACE("mass[%d]: %f\n", singularity_index, singularities[singularity_index].mass);
     }
 
@@ -212,8 +221,6 @@ void update_worker(int index) {
             });
         }
 
-
-
         for (int k = 0; k < ArrayCount(singularities); k++) {
             const SingularityState s = singularities[k];
             for (int i = pr.start_index; i < pr.start_index + pr.length; i++) {
@@ -223,7 +230,7 @@ void update_worker(int index) {
                 p->position += p->velocity.scale(dt);
                 p->velocity = p->velocity.scale(0.9998f);
                 p->force = get_gravity_force(p->position, p->mass, s);
-                
+        
                 particle_centers[i] = p->position;
                 particle_colors[i] = p->velocity.scale(1.0f / 6.0f);
             }
@@ -278,19 +285,18 @@ void render() {
     for (int i = 0; i < ArrayCount(singularities); i++) {
         const SingularityState s = singularities[i];
         Math::Mat4 model = Math::Mat4::Identity();
-        model = Math::Mat4::Scale(model, s.mass / 100000.0f);
+        model = Math::Mat4::Scale(model, s.mass / (MASS_FACTOR * 50));
         model = Math::Mat4::Translate(model, s.position);
-        
         singularity_shader.setMat4("uModel", model);
 
-        if (i == singularity_index) {
+        if (i == singularity_index && !s.active) {
+            singularity_shader.setVec3("uColor", Math::Vec3(0.25f, 0, 0));
+        } else if (i == singularity_index) {
             singularity_shader.setVec3("uColor", Math::Vec3(1, 0, 0));
+        } else if (!s.active) {
+            singularity_shader.setVec3("uColor", Math::Vec3(0, 0, 0));
         } else {
             singularity_shader.setVec3("uColor", Math::Vec3(1, 1, 1));
-        }
-
-        if (!s.active) {
-            singularity_shader.setVec3("uColor", Math::Vec3(0, 0, 0));
         }
         
         GFX::DrawGeometry(singularity, &singularity_shader);
@@ -422,11 +428,11 @@ int main(int argc, char** argv) {
         
         Input::Poll();
         
-        const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES; // 3000;
+        const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES * 2; // * 0.20f; // 3000;
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) { 
             Particle p; 
-            #if 0
+            #if 1
                 float angle = 50.0f * accumulator + (i * 0.1f); 
                 float speed = 2.0f + sin(accumulator); 
                 float dx = speed * cos(angle); 
@@ -437,7 +443,8 @@ int main(int argc, char** argv) {
                 float freqY = 2.0f; 
                 float strength = 4.0f; 
                 float dx = strength * cos(freqX * accumulator + (i * 0.05f)); 
-                float dy = strength * sin(freqY * accumulator); float dz = 0; 
+                float dy = strength * sin(freqY * accumulator); 
+                float dz = 0; 
             #else 
                 float individualOffset = (float)i; 
                 float dx = 12.0f * cos(5.0f * accumulator + i); 
