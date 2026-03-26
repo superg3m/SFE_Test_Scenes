@@ -51,7 +51,7 @@ const float MASS_FACTOR = 250.0f;
 int singularity_index = 0;
 float FURTHER = 200;
 
-const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES * 60.0f; // * 0.20f; // 3000;
+const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES; // * 0.20f; // 3000;
 
 struct ThreadSystem {
     std::mutex mtx;
@@ -433,13 +433,13 @@ int main(int argc, char** argv) {
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) { 
             Particle p; 
-            #if 0
+            #if 1
                 float angle = 50.0f * accumulator + (i * 0.1f); 
                 float speed = 2.0f + sin(accumulator); 
                 float dx = speed * cos(angle); 
                 float dy = speed * sin(angle); 
                 float dz = speed * sin(angle + i); 
-            #elif 1
+            #elif 0
                 float freqX = 3.0f; 
                 float freqY = 2.0f; 
                 float strength = 4.0f; 
