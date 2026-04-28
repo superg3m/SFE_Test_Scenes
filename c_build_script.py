@@ -29,7 +29,7 @@ pc: ProjectConfig = ProjectConfig(
     ],
     project_debug_with_visual_studio = False,
     project_rebuild_project_dependencies = False,
-    project_executable_names = ["terrain.exe", "particle.exe"]
+    project_executable_names = ["imgui.exe"]
 )
 
 if IS_WINDOWS() and not C_BUILD_IS_DEPENDENCY():
@@ -104,6 +104,7 @@ include_paths =  [
     "../../SFE/Vendor/glfw", 
     "../../SFE/Vendor/imgui",
     "../../SFE/Vendor/stb",
+    "../../SFE/Vendor/nativefiledialog/src",
 ]
 
 procedures_config = {
@@ -149,6 +150,17 @@ procedures_config = {
         source_files = [
             "../../Scenes/ChurchScene/main.cpp",
             "../../Scenes/ChurchScene/Shaders/**/*.cpp",
+        ],
+        additional_libs = libs,
+        include_paths = include_paths,
+        compiler_inject_into_args=inject
+    ),
+    
+    "imgui scene": ProcedureConfig(
+        build_directory = f"./{build_postfix}",
+        output_name = f"imgui.exe",
+        source_files = [
+            "../../Scenes/IMGUIScene/main.cpp",
         ],
         additional_libs = libs,
         include_paths = include_paths,
