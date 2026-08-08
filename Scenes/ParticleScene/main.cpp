@@ -44,14 +44,14 @@ struct Particle {
 #define THREAD_COUNT 1
 
 // MUST BE DIVISIBLE BY THE THREAD COUNT
-const int MAX_PARTICLES = 100000;
+const int MAX_PARTICLES = 200000;
 DS::Vector<Particle> particles;
 int particle_count = 0;
 const float MASS_FACTOR = 250.0f;
 int singularity_index = 0;
 float FURTHER = 200;
 
-const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES; // * 0.20f; // 3000;
+const float PARTICLE_SPAWN_COUNT_PER_SECOND = MAX_PARTICLES * 10; // * 0.20f; // 3000;
 
 struct ThreadSystem {
     std::mutex mtx;
@@ -433,13 +433,13 @@ int main(int argc, char** argv) {
         int spawn_count = (int)(PARTICLE_SPAWN_COUNT_PER_SECOND * dt);
         for (int i = 0; (particle_count < MAX_PARTICLES) && (i < spawn_count); i++) { 
             Particle p; 
-            #if 1
+            #if 0
                 float angle = 50.0f * accumulator + (i * 0.1f); 
                 float speed = 2.0f + sin(accumulator); 
                 float dx = speed * cos(angle); 
                 float dy = speed * sin(angle); 
                 float dz = speed * sin(angle + i); 
-            #elif 0
+            #elif 1
                 float freqX = 3.0f; 
                 float freqY = 2.0f; 
                 float strength = 4.0f; 
